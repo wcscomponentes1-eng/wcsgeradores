@@ -301,12 +301,47 @@ function sendWhatsAppForEquipment(id){
   window.open(whatsappUrl(e.telefone_cliente||e.telefone,msg),'_blank');
 }
 
-async function openClientByToken(token){$('homeBtn').style.display='none';$('logoutBtn').style.display='none';
+let clientToken=null;
+let clientRefreshTimer=null;
+let clientRefreshing=false;
+
+async function openClientByToken(token){
+  $('homeBtn').style.display='none';$('logoutBtn').style.display='none';
+  clientToken=token;
   const {data,error}=await sb.rpc('consultar_acompanhamento',{p_token:token});
   const e=(data||[])[0];
-  if(error||!e){showScreen('clienteView');$('clientContent').innerHTML='<div class="empty">Link de acompanhamento inválido ou equipamento não encontrado.</div>';return}
+  if(error||!e){showScreen('clienteView');$('clientContent').innerHTML='<div class="empty">Link de acompanhamento inválido ou equipamento não encontrado.</div>';stopClientAutoRefresh();return}
   renderClientView(e);showScreen('clienteView');
+  startClientAutoRefresh();
 }
+
+async function refreshClientView(){
+  if(!clientToken || clientRefreshing) return;
+  clientRefreshing=true;
+  try{
+    const {data,error}=await sb.rpc('consultar_acompanhamento',{p_token:clientToken});
+    const e=(data||[])[0];
+    if(!error && e) renderClientView(e);
+  }finally{
+    clientRefreshing=false;
+  }
+}
+
+function startClientAutoRefresh(){
+  stopClientAutoRefresh();
+  // Atualiza automaticamente a cada 3 segundos, sem o cliente precisar recarregar a página.
+  clientRefreshTimer=setInterval(()=>{
+    if(document.visibilityState==='visible') refreshClientView();
+  },3000);
+}
+
+function stopClientAutoRefresh(){
+  if(clientRefreshTimer){clearInterval(clientRefreshTimer);clientRefreshTimer=null;}
+}
+
+document.addEventListener('visibilitychange',()=>{
+  if(clientToken && document.visibilityState==='visible') refreshClientView();
+});
 function renderClientView(e){
   const stages=['Recebido','Levantamento de orçamento','Em execução','Finalizado'];const idx=stages.indexOf(e.status);
   const pct=idx===0?8:idx===1?38:idx===2?70:100;
