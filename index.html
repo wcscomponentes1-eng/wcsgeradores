@@ -133,7 +133,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue)}textarea{min-he
 </section>
 
 <section id="detalhe" class="screen">
-  <div class="toolbar"><div><button class="btn ghost" onclick="showSupervisao()">← Voltar à lista</button></div><div id="detailActions"></div></div>
+  <div class="toolbar"><div><button class="btn ghost" onclick="showSupervisao()">← Voltar à lista</button></div><div id="detailActions"><button class="btn" onclick="openEquipmentEdit()">✏️ Alterar informações</button> <button class="btn danger" onclick="deleteEquipment()">🗑️ Excluir OS</button></div></div>
   <div class="detail">
     <div class="card panel">
       <h2 id="dEquip">Equipamento</h2><div class="subtitle" id="dCliente"></div>
@@ -143,7 +143,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue)}textarea{min-he
     <div>
       <div class="card panel">
         <h3>Dados de atendimento</h3>
-        <div class="field"><label>Telefone / WhatsApp do cliente <span class="req">*</span></label><input id="dTelefone" type="tel" placeholder="+55 (14) 99999-9999" onchange="saveCustomerPhone()"></div>
+        <div class="field"><label>Telefone / WhatsApp do cliente <span class="req">*</span></label><input id="dTelefone" type="tel" placeholder="+55 (14) 99999-9999" onblur="validateCustomerPhoneField()"></div>
         <div class="field" style="margin-top:12px"><label>Técnico responsável</label><select id="dTecnico" onchange="selectTecnico(this.value)"></select></div>
         <div class="field" style="margin-top:12px"><label>Nº da Ordem de Serviço</label><input id="dOS" placeholder="Ex.: OS-2026-0001"></div>
         <div style="margin-top:10px;color:#8fa2b2;font-size:12px">Telefone e técnico são salvos automaticamente ao alterar.</div>
@@ -178,6 +178,25 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue)}textarea{min-he
   <div class="field" style="margin-top:12px"><label>Telefone</label><input id="techPhone" type="tel" placeholder="+55 (14) 99999-9999"></div>
   <div class="field" style="margin-top:12px"><label>E-mail</label><input id="techEmail" placeholder="E-mail"></div>
   <div class="nav"><button class="btn ghost" onclick="closeTechModal()">Cancelar</button><button class="btn success" onclick="saveTech()">Salvar técnico</button></div>
+</div></div>
+
+<div id="equipmentEditModal" class="modal"><div class="card" style="width:min(900px,100%);max-height:90vh;overflow:auto">
+  <h2>Alterar informações da OS</h2><div class="subtitle">Faça as alterações e confirme somente quando quiser gravá-las.</div>
+  <div class="grid">
+    <div class="field"><label>Entregue por</label><input id="editEntreguePor"></div>
+    <div class="field"><label>Nome do cliente</label><input id="editCliente"></div>
+    <div class="field"><label>Telefone / WhatsApp <span class="req">*</span></label><input id="editTelefone" type="tel" placeholder="+55 (14) 99999-9999"></div>
+    <div class="field"><label>CPF/CNPJ</label><input id="editCpfCnpj"></div>
+    <div class="field"><label>E-mail</label><input id="editEmail" type="email"></div>
+    <div class="field"><label>Equipamento</label><input id="editEquipamento"></div>
+    <div class="field"><label>Modelo</label><input id="editModelo"></div>
+    <div class="field"><label>Número de série</label><input id="editSerie"></div>
+    <div class="field"><label>Horas trabalhadas</label><input id="editHoras"></div>
+    <div class="field"><label>Número do chassi</label><input id="editChassi"></div>
+    <div class="field"><label>Data e hora de entrega</label><input id="editEntrada" type="datetime-local"></div>
+    <div class="field full"><label>Observações</label><textarea id="editObs"></textarea></div>
+  </div>
+  <div class="nav"><button class="btn ghost" onclick="closeEquipmentEdit()">Cancelar</button><button class="btn success" onclick="saveEquipmentChanges()">💾 Salvar alterações</button></div>
 </div></div>
 
 <div id="toast" class="toast"></div>
@@ -284,8 +303,87 @@ async function finalize(){
 }
 async function showSupervisao(){await loadAll();renderTable();showScreen('supervisao')}
 function renderTable(){const q=($('search')?.value||'').toLowerCase(),sf=$('statusFilter')?.value||'';const list=db.equipamentos.filter(e=>(!q||[e.equipamento,e.cliente,e.os,e.serie].join(' ').toLowerCase().includes(q))&&(!sf||e.status===sf));$('tbody').innerHTML=list.length?list.map(e=>{const t=db.tecnicos.find(t=>t.id===e.tecnicoId);const badge=e.unreadMessages>0?`<span class="msg-badge" title="${e.unreadMessages} mensagem(ns) nova(s)">${e.unreadMessages>9?'9+':e.unreadMessages}</span>`:'';return `<tr class="clickrow" onclick="openDetail('${e.id}')"><td><b>${esc(e.equipamento)}</b><br><small>${esc(e.modelo||'')}</small></td><td>${esc(e.nome_cliente)}</td><td><span class="status ${statusClass(e.status)}">${e.status}</span></td><td>${esc(t?.nome||'-')}</td><td><b>${esc(e.os||'-')}</b>${badge}</td><td>${fmt(e.entrada)}</td><td>${esc(e.entreguePor)}</td><td onclick="event.stopPropagation()"><button class="btn success" style="padding:7px 10px;font-size:12px;white-space:nowrap" onclick="sendWhatsAppForEquipment('${e.id}')">📱 Reenviar</button></td></tr>`}).join(''):`<tr><td colspan="8"><div class="empty">Nenhum equipamento encontrado.</div></td></tr>`}
-async function openDetail(id){currentId=id;const e=db.equipamentos.find(x=>x.id===id);if(!e)return;await loadRelations(e);const unreadCount=e.messages.filter(m=>m.unread).length;if(unreadCount){await sb.from('mensagens_cliente').update({lida:true}).eq('equipamento_id',id).eq('lida',false);e.messages.forEach(m=>m.unread=false);e.unreadMessages=0;}$('dEquip').textContent=e.equipamento;$('dCliente').textContent=`Cliente: ${e.cliente}`;const t=db.tecnicos.find(t=>t.id===e.tecnicoId);const items=[['Entregue por',e.entreguePor],['Telefone',e.telefone],['CPF/CNPJ',e.cpfcnpj||'-'],['E-mail',e.email||'-'],['Modelo',e.modelo||'-'],['Nº de série',e.serie||'-'],['Horas trabalhadas',e.horas||'-'],['Nº do chassi',e.chassi||'-'],['Data/hora de entrada',fmt(e.entrada)],['WhatsApp',e.whatsapp?'Sim':'Não'],['Observações',e.obsEquip||'-'],['Obs. fotos',e.obsFotos||'-']];$('infoGrid').innerHTML=items.map(x=>`<div class="info"><small>${x[0]}</small><b>${esc(x[1])}</b></div>`).join('');$('dTelefone').value=phoneDisplay(e.telefone||'');$('dTecnico').innerHTML='<option value="">— Sem técnico —</option>'+db.tecnicos.filter(x=>x.ativo!==false).map(x=>`<option value="${x.id}" ${x.id===e.tecnicoId?'selected':''}>${esc(x.nome)}</option>`).join('');$('dTecnico').onchange=()=>selectTecnico($('dTecnico').value);$('dOS').value=e.os||'';$('dOS').onchange=()=>saveOS();
+async function openDetail(id){currentId=id;const e=db.equipamentos.find(x=>x.id===id);if(!e)return;await loadRelations(e);const unreadCount=e.messages.filter(m=>m.unread).length;if(unreadCount){await sb.from('mensagens_cliente').update({lida:true}).eq('equipamento_id',id).eq('lida',false);e.messages.forEach(m=>m.unread=false);e.unreadMessages=0;}$('dEquip').textContent=e.equipamento;$('dCliente').textContent=`Cliente: ${e.cliente}`;const t=db.tecnicos.find(t=>t.id===e.tecnicoId);const items=[['Entregue por',e.entreguePor],['Telefone',e.telefone],['CPF/CNPJ',e.cpfcnpj||'-'],['E-mail',e.email||'-'],['Modelo',e.modelo||'-'],['Nº de série',e.serie||'-'],['Horas trabalhadas',e.horas||'-'],['Nº do chassi',e.chassi||'-'],['Data/hora de entrada',fmt(e.entrada)],['WhatsApp',e.whatsapp?'Sim':'Não'],['Observações',e.obsEquip||'-'],['Obs. fotos',e.obsFotos||'-']];$('infoGrid').innerHTML=items.map(x=>`<div class="info"><small>${x[0]}</small><b>${esc(x[1])}</b></div>`).join('');$('dTelefone').value=phoneDisplay(e.telefone||'');$('dTecnico').innerHTML='<option value="">— Sem técnico —</option>'+db.tecnicos.filter(x=>x.ativo!==false).map(x=>`<option value="${x.id}" ${x.id===e.tecnicoId?'selected':''}>${esc(x.nome)}</option>`).join('');$('dTecnico').onchange=()=>confirmSelectTecnico($('dTecnico').value);$('dOS').value=e.os||'';$('dOS').onblur=()=>confirmSaveOS();
   const stages=['Recebido','Levantamento de orçamento','Em execução','Finalizado'],idx=stages.indexOf(e.status);$('timeline').innerHTML=stages.map((s,i)=>`<div class="stage ${i===idx?'current':''} ${i<idx?'done':''}"><div><b>${s}</b><br><small>${i<=idx?(e.history.find(h=>h.status===s)?fmt(e.history.find(h=>h.status===s).at):'Concluído'):'Aguardando'}</small></div>${i===idx&&i<3?`<button class="btn primary" onclick="advanceStatus('${e.id}')">Avançar →</button>`:''}</div>`).join('');$('clientMessages').innerHTML=e.status==='Levantamento de orçamento'?(e.messages.length?e.messages.map(m=>`<div class="message ${m.unread?'new':''}"><b>${m.unread?'🔴 Nova mensagem':'💬 Cliente'}</b><p>${esc(m.text)}</p><small>${fmt(m.at)}</small></div>`).join(''):'<div class="empty" style="padding:20px">Nenhuma observação do cliente.</div>'):'<div class="empty" style="padding:20px">O campo de mensagem do cliente aparece somente durante o levantamento de orçamento.</div>';$('detailPhotos').innerHTML=e.photos.length?e.photos.map(p=>`<div class="photo"><img src="${p.data}"></div>`).join(''):'<div class="empty" style="padding:20px">Nenhuma foto.</div>';showScreen('detalhe')}
+function openEquipmentEdit(){
+  const e=db.equipamentos.find(x=>x.id===currentId);
+  if(!e)return;
+  $('editEntreguePor').value=e.entreguePor||'';
+  $('editCliente').value=e.cliente||e.nome_cliente||'';
+  $('editTelefone').value=phoneDisplay(e.telefone||e.telefone_cliente||'');
+  $('editCpfCnpj').value=e.cpfcnpj||e.cpf_cnpj||'';
+  $('editEmail').value=e.email||e.email_cliente||'';
+  $('editEquipamento').value=e.equipamento||'';
+  $('editModelo').value=e.modelo||'';
+  $('editSerie').value=e.serie||e.numero_serie||'';
+  $('editHoras').value=e.horas||e.horas_trabalhadas||'';
+  $('editChassi').value=e.chassi||e.numero_chassi||'';
+  const dt=e.entrada||e.data_entrega;
+  $('editEntrada').value=dt?new Date(dt).toISOString().slice(0,16):localDateTime();
+  $('editObs').value=e.obsEquip||e.observacoes||'';
+  $('equipmentEditModal').classList.add('show');
+}
+function closeEquipmentEdit(){$('equipmentEditModal').classList.remove('show')}
+function validateCustomerPhoneField(){
+  const v=$('dTelefone')?.value.trim()||'';
+  if(v && !validPhone(v)){toast('Telefone inválido. Use +55 + DDD + telefone.'); const e=db.equipamentos.find(x=>x.id===currentId); if(e)$('dTelefone').value=phoneDisplay(e.telefone||'')}
+}
+async function confirmSelectTecnico(value){
+  if(!currentId)return;
+  const e=db.equipamentos.find(x=>x.id===currentId); if(!e)return;
+  const old=e.tecnicoId||'';
+  if(value===old)return;
+  const name=db.tecnicos.find(t=>t.id===value)?.nome||'Sem técnico';
+  if(!confirm(`Confirmar alteração do técnico para "${name}"?`)){ $('dTecnico').value=old; return; }
+  await selectTecnico(value);
+}
+async function confirmSaveOS(){
+  if(!currentId)return;
+  const e=db.equipamentos.find(x=>x.id===currentId); if(!e)return;
+  const value=$('dOS').value.trim()||'';
+  if(value===(e.os||''))return;
+  if(!confirm(`Confirmar alteração do Nº da OS para "${value||'sem número'}"?`)){ $('dOS').value=e.os||''; return; }
+  await saveOS();
+}
+async function saveEquipmentChanges(){
+  const e=db.equipamentos.find(x=>x.id===currentId); if(!e)return;
+  const phone=$('editTelefone').value.trim();
+  if(!validPhone(phone)){toast('Telefone obrigatório. Use +55 + DDD + telefone. Ex.: +55 (14) 99999-9999.');return}
+  const email=$('editEmail').value.trim();
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){toast('E-mail inválido.');return}
+  if(!confirm('Confirmar e salvar todas as alterações desta OS?'))return;
+  const payload={
+    entregue_por:$('editEntreguePor').value.trim(),
+    nome_cliente:$('editCliente').value.trim(),
+    telefone_cliente:phoneDigits(phone),
+    cpf_cnpj:$('editCpfCnpj').value.trim()||null,
+    email_cliente:email||null,
+    equipamento:$('editEquipamento').value.trim()||'Equipamento não informado',
+    modelo:$('editModelo').value.trim()||null,
+    numero_serie:$('editSerie').value.trim()||null,
+    horas_trabalhadas:$('editHoras').value.trim()||null,
+    numero_chassi:$('editChassi').value.trim()||null,
+    data_entrega:new Date($('editEntrada').value).toISOString(),
+    observacoes:$('editObs').value.trim()||null
+  };
+  const {error}=await sb.from('equipamentos').update(payload).eq('id',currentId);
+  if(error){toast('Erro ao salvar alterações: '+error.message);console.error(error);return}
+  closeEquipmentEdit();
+  await loadAll();
+  toast('Alterações salvas com sucesso.');
+  await openDetail(currentId);
+}
+async function deleteEquipment(){
+  const e=db.equipamentos.find(x=>x.id===currentId); if(!e)return;
+  if(!confirm(`Tem certeza que deseja EXCLUIR a OS do equipamento "${e.equipamento}"?\n\nEsta ação excluirá o atendimento e seus registros relacionados.`))return;
+  const id=currentId;
+  const {error}=await sb.from('equipamentos').delete().eq('id',id);
+  if(error){toast('Erro ao excluir OS: '+error.message);console.error(error);return}
+  currentId=null;
+  toast('OS excluída com sucesso.');
+  await showSupervisao();
+}
+
 async function selectTecnico(value){if(!currentId)return;const {error}=await sb.from('equipamentos').update({tecnico_id:value||null}).eq('id',currentId);if(error){toast('Erro ao salvar técnico.');console.error(error);return}const e=db.equipamentos.find(x=>x.id===currentId);if(e)e.tecnicoId=value||'';toast('Técnico atualizado.');renderTable()}
 async function saveCustomerPhone(){if(!currentId)return;const value=$('dTelefone').value.trim();if(!validPhone(value)){toast('Telefone inválido. Use +55 + DDD + telefone. Ex.: +55 (14) 99999-9999.');const e=db.equipamentos.find(x=>x.id===currentId);if(e)$('dTelefone').value=phoneDisplay(e.telefone||'');return}const digits=phoneDigits(value);const {error}=await sb.from('equipamentos').update({telefone_cliente:digits}).eq('id',currentId);if(error){toast('Erro ao salvar telefone.');console.error(error);return}const e=db.equipamentos.find(x=>x.id===currentId);if(e)e.telefone=digits;toast('Telefone atualizado.')}
 async function saveOS(){if(!currentId)return;const value=$('dOS').value.trim()||null;const {error}=await sb.from('equipamentos').update({numero_os:value}).eq('id',currentId);if(error){toast('Erro ao salvar OS.');console.error(error);return}const e=db.equipamentos.find(x=>x.id===currentId);if(e)e.os=value||'';toast('OS atualizada.');renderTable()}
