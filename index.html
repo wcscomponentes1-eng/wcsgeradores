@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WCS Geradores - Sistema Online</title>
+<style>
+:root{
+  --bg:#0b1118;--panel:#111a24;--panel2:#172331;--line:#263646;
+  --text:#eef4f8;--muted:#9fb0bf;--blue:#1597ff;--green:#18b879;
+  --yellow:#e5a72b;--red:#e25555;--shadow:0 12px 35px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(135deg,#071018,#101b27);color:var(--text);min-height:100vh}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{max-width:1400px;margin:auto;padding:22px}
+header{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:13px}.logo{width:48px;height:48px;border-radius:12px;background:linear-gradient(145deg,#eaf4ff,#708da5);color:#08111a;display:grid;place-items:center;font-weight:900;font-size:18px;box-shadow:0 8px 25px #0005}
+.brand h1{font-size:21px;margin:0}.brand small{color:var(--muted)}
+.card{background:rgba(17,26,36,.94);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+.home-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:55px}
+.big-btn{min-height:190px;padding:28px;border:1px solid var(--line);background:linear-gradient(145deg,#142130,#0e1822);border-radius:20px;color:#fff;text-align:left;transition:.2s}
+.big-btn:hover{transform:translateY(-3px);border-color:#378fd0}
+.big-btn .ico{font-size:42px;margin-bottom:20px}.big-btn b{display:block;font-size:21px;margin-bottom:8px}.big-btn span{color:var(--muted)}
+.top-actions{display:flex;gap:9px;flex-wrap:wrap}
+.btn{border:0;border-radius:10px;padding:11px 16px;font-weight:700;color:#fff;background:#263746}
+.btn.primary{background:var(--blue)}.btn.success{background:var(--green)}.btn.warn{background:#b9821d}.btn.danger{background:#b94141}.btn.ghost{background:transparent;border:1px solid var(--line)}
+.screen{display:none}.screen.active{display:block}
+.form-card{padding:26px;max-width:980px;margin:auto}
+.stepbar{display:flex;gap:7px;margin:18px 0 25px}.step{flex:1;height:7px;border-radius:99px;background:#253442}.step.active{background:var(--blue)}
+.step-label{color:var(--muted);font-size:13px;margin-bottom:7px}
+h2{margin:0 0 7px;font-size:25px}h3{margin:0 0 17px}.subtitle{color:var(--muted);margin-bottom:22px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.field.full{grid-column:1/-1}
+label{display:block;font-size:13px;color:#c8d4de;margin-bottom:7px}label .req{color:#ff7777}
+input,select,textarea{width:100%;background:#0c151e;color:#fff;border:1px solid #2a3b4a;border-radius:10px;padding:12px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--blue)}textarea{min-height:105px;resize:vertical}
+.nav{display:flex;justify-content:space-between;margin-top:25px;border-top:1px solid var(--line);padding-top:20px}
+.toggle{display:flex;align-items:center;gap:10px;margin-top:5px}.toggle input{width:auto}.switch{position:relative;width:46px;height:25px}.switch input{display:none}.slider{position:absolute;inset:0;border-radius:30px;background:#43525e;transition:.2s}.slider:before{content:"";position:absolute;width:19px;height:19px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}.switch input:checked+.slider{background:var(--green)}.switch input:checked+.slider:before{transform:translateX(21px)}
+.photos{display:flex;gap:12px;flex-wrap:wrap;margin-top:15px}.photo{width:130px;height:105px;position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--line)}.photo img{width:100%;height:100%;object-fit:cover}.photo button{position:absolute;right:5px;top:5px;border:0;border-radius:50%;width:25px;height:25px;background:#000b;color:#fff}
+.photo-actions{display:flex;gap:10px;flex-wrap:wrap}.photo-actions label{margin:0}.photo-actions input{display:none}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:15px}.filters{display:flex;gap:8px;flex-wrap:wrap}.filters input,.filters select{width:auto;min-width:170px}
+.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:950px}.table th,.table td{padding:13px 11px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}.table th{color:#aebdca;background:#0e1821;position:sticky;top:0}.table tr:hover td{background:#15212c}.clickrow{cursor:pointer}
+.status{display:inline-flex;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:800;white-space:nowrap}.s-recebido{background:#27445a;color:#9ed7ff}.s-orc{background:#5d481e;color:#ffd976}.s-exec{background:#174c42;color:#7ce2c0}.s-fin{background:#27472f;color:#9af0a5}
+.detail{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}.panel{padding:20px}.info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.info{background:#0d1720;border:1px solid var(--line);padding:12px;border-radius:10px}.info small{display:block;color:var(--muted);margin-bottom:4px}.timeline{display:flex;flex-direction:column;gap:9px}.stage{border:1px solid var(--line);border-radius:12px;padding:14px;background:#0d1720;display:flex;justify-content:space-between;gap:10px;align-items:center}.stage.current{border-color:var(--blue);box-shadow:inset 4px 0 var(--blue)}.stage.done{opacity:.8}.stage button{padding:8px 11px}.customer-box{margin-top:18px;padding:16px;border-radius:12px;background:#101d28;border:1px dashed #31516b}.message{background:#0c151e;border:1px solid var(--line);padding:12px;border-radius:10px;margin-top:10px}.new{border-color:var(--yellow)}.tech-list{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.tech{padding:15px;background:#0d1720;border:1px solid var(--line);border-radius:12px}.modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:20px;z-index:20}.modal.show{display:flex}.modal .card{width:min(650px,100%);padding:22px}
+.toast{position:fixed;right:20px;bottom:20px;background:#142431;border:1px solid #31536c;padding:14px 18px;border-radius:12px;display:none;z-index:30}.toast.show{display:block}
+.empty{text-align:center;padding:45px;color:var(--muted)}
+@media(max-width:900px){.home-grid,.detail,.tech-list{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.form-card{padding:20px}.app{padding:13px}.info-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><div class="logo">WCS</div><div><h1>WCS GERADORES</h1><small>Controle de equipamentos e serviços</small></div></div>
+  <div class="top-actions"><button class="btn ghost" id="homeBtn" onclick="showScreen('home')">⌂ Início</button></div>
+</header>
+
+<section id="home" class="screen active">
+  <div class="card" style="padding:30px">
+    <h2>Central de atendimento</h2><div class="subtitle">Cadastre equipamentos e acompanhe cada serviço.</div>
+    <div class="home-grid">
+      <button class="big-btn" onclick="startCadastro()"><div class="ico">➕</div><b>Adicionar equipamento</b><span>Registrar a entrada de um novo equipamento.</span></button>
+      <button class="big-btn" onclick="showSupervisao()"><div class="ico">📊</div><b>Painel de supervisão</b><span>Visualizar e acompanhar todos os equipamentos.</span></button>
+      <button class="big-btn" onclick="showTecnicos()"><div class="ico">👨‍🔧</div><b>Cadastro de técnicos</b><span>Cadastrar e gerenciar os técnicos responsáveis.</span></button>
+    </div>
+  </div>
+</section>
+
+<section id="cadastro" class="screen">
+  <div class="form-card card">
+    <div class="step-label" id="stepLabel">ETAPA 1 DE 3</div><h2 id="stepTitle">Dados do cliente</h2><div class="subtitle" id="stepSub">Informe os dados de quem entregou o equipamento.</div>
+    <div class="stepbar"><div class="step active" id="bar1"></div><div class="step" id="bar2"></div><div class="step" id="bar3"></div></div>
+
+    <div id="step1" class="step-content">
+      <div class="grid">
+        <div class="field"><label>Entregue por <span class="req">*</span></label><input id="entreguePor" placeholder="Nome de quem entregou"></div>
+        <div class="field"><label>Nome do cliente <span class="req">*</span></label><input id="cliente" placeholder="Nome completo / empresa"></div>
+        <div class="field"><label>Telefone / WhatsApp <span class="req">*</span></label><input id="telefone" placeholder="(00) 00000-0000"></div>
+        <div class="field"><label>CPF/CNPJ</label><input id="cpfcnpj" placeholder="CPF ou CNPJ"></div>
+        <div class="field"><label>E-mail</label><input id="email" type="email" placeholder="cliente@email.com"></div>
+        <div class="field"><label>Enviar atualizações por WhatsApp?</label><div class="toggle"><label class="switch"><input id="whatsapp" type="checkbox" checked><span class="slider"></span></label><b>SIM</b></div></div>
+      </div>
+    </div>
+
+    <div id="step2" class="step-content" style="display:none">
+      <div class="grid">
+        <div class="field"><label>Equipamento</label><input id="equipamento" placeholder="Ex.: Gerador"></div>
+        <div class="field"><label>Modelo</label><input id="modelo" placeholder="Modelo"></div>
+        <div class="field"><label>Número de série</label><input id="serie" placeholder="Número de série"></div>
+        <div class="field"><label>Horas trabalhadas</label><input id="horas" placeholder="Ex.: 1250"></div>
+        <div class="field"><label>Número do chassi</label><input id="chassi" placeholder="Número do chassi"></div>
+        <div class="field"><label>Data e hora de entrega</label><input id="entrada" type="datetime-local"></div>
+        <div class="field full"><label>Observações</label><textarea id="obsEquip" placeholder="Informações iniciais sobre o equipamento..."></textarea></div>
+      </div>
+    </div>
+
+    <div id="step3" class="step-content" style="display:none">
+      <h3>📷 Fotos do equipamento</h3>
+      <div class="photo-actions">
+        <label class="btn primary">📸 Câmera<input id="cameraInput" type="file" accept="image/*" capture="environment" multiple></label>
+        <label class="btn">📁 Galeria<input id="galleryInput" type="file" accept="image/*" multiple></label>
+      </div>
+      <div id="photos" class="photos"></div>
+      <div style="margin-top:22px"><label>Observações das fotos / estado visual</label><textarea id="obsFotos" placeholder="Descreva detalhes observados nas fotos..."></textarea></div>
+    </div>
+
+    <div class="nav">
+      <button class="btn ghost" onclick="prevStep()">← Voltar</button>
+      <button class="btn primary" id="nextBtn" onclick="nextStep()">Avançar →</button>
+    </div>
+  </div>
+</section>
+
+<section id="supervisao" class="screen">
+  <div class="card" style="padding:22px">
+    <div class="toolbar"><div><h2>Painel de supervisão</h2><div class="subtitle" style="margin:3px 0 0">Equipamentos cadastrados</div></div><button class="btn primary" onclick="startCadastro()">➕ Adicionar equipamento</button></div>
+    <div class="filters">
+      <input id="search" placeholder="🔎 Buscar equipamento, cliente ou OS" oninput="renderTable()">
+      <select id="statusFilter" onchange="renderTable()"><option value="">Todos os status</option><option>Recebido</option><option>Levantamento de orçamento</option><option>Em execução</option><option>Finalizado</option></select>
+    </div>
+    <div class="table-wrap" style="margin-top:14px"><table class="table"><thead><tr><th>Equipamento</th><th>Cliente</th><th>Status</th><th>Técnico</th><th>Nº OS</th><th>Data de entrada</th><th>Entregue por</th></tr></thead><tbody id="tbody"></tbody></table></div>
+  </div>
+</section>
+
+<section id="detalhe" class="screen">
+  <div class="toolbar"><div><button class="btn ghost" onclick="showSupervisao()">← Voltar à lista</button></div><div id="detailActions"></div></div>
+  <div class="detail">
+    <div class="card panel">
+      <h2 id="dEquip">Equipamento</h2><div class="subtitle" id="dCliente"></div>
+      <div class="info-grid" id="infoGrid"></div>
+      <div style="margin-top:20px"><h3>Histórico de status</h3><div class="timeline" id="timeline"></div></div>
+    </div>
+    <div>
+      <div class="card panel">
+        <h3>Dados de atendimento</h3>
+        <div class="field"><label>Técnico responsável</label><select id="dTecnico" onchange="selectTecnico(this.value)"></select></div>
+        <div class="field" style="margin-top:12px"><label>Nº da Ordem de Serviço</label><input id="dOS" placeholder="Ex.: OS-2026-0001"></div>
+        <div style="margin-top:10px;color:#8fa2b2;font-size:12px">O técnico selecionado é salvo automaticamente.</div>
+      </div>
+      <div class="card panel" style="margin-top:18px">
+        <h3>💬 Mensagens do cliente</h3><div id="clientMessages"></div>
+      </div>
+      <div class="card panel" style="margin-top:18px">
+        <h3>📷 Fotos</h3><div id="detailPhotos" class="photos"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="clienteView" class="screen">
+  <div class="form-card card" style="max-width:850px">
+    <div style="text-align:center;margin-bottom:24px"><div class="logo" style="margin:0 auto 12px">WCS</div><h2>Acompanhamento do equipamento</h2><div class="subtitle">WCS GERADORES</div></div>
+    <div id="clientContent"></div>
+  </div>
+</section>
+
+<section id="tecnicos" class="screen">
+  <div class="card" style="padding:22px">
+    <div class="toolbar"><div><h2>Cadastro de técnicos</h2><div class="subtitle" style="margin:3px 0 0">Gerencie os responsáveis pelos serviços.</div></div><button class="btn primary" onclick="openTechModal()">➕ Novo técnico</button></div>
+    <div id="techList" class="tech-list"></div>
+  </div>
+</section>
+
+<div id="techModal" class="modal"><div class="card">
+  <h2 id="techModalTitle">Novo técnico</h2><div class="subtitle">Cadastre ou altere os dados do técnico.</div>
+  <div class="field"><label>Nome do técnico</label><input id="techName" placeholder="Nome completo"></div>
+  <div class="field" style="margin-top:12px"><label>Telefone</label><input id="techPhone" placeholder="Telefone / WhatsApp"></div>
+  <div class="field" style="margin-top:12px"><label>E-mail</label><input id="techEmail" placeholder="E-mail"></div>
+  <div class="nav"><button class="btn ghost" onclick="closeTechModal()">Cancelar</button><button class="btn success" onclick="saveTech()">Salvar técnico</button></div>
+</div></div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://lyvjxpsxljamhcnrzvzx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Y5Cm6hkHUiiBP0rfmPuYrA_GLrKylaY';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let db={equipamentos:[],tecnicos:[]};
+let draft={photos:[]}, step=1, currentId=null;
+const $=id=>document.getElementById(id);
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');window.scrollTo(0,0)}
+function localDateTime(){const d=new Date(),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`}
+function fmt(d){if(!d)return '-';return new Date(d).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function statusClass(s){return s==='Recebido'?'s-recebido':s==='Levantamento de orçamento'?'s-orc':s==='Em execução'?'s-exec':'s-fin'}
+
+async function loadAll(){
+  const [{data:equip,error:ee},{data:tech,error:et}]=await Promise.all([
+    sb.from('equipamentos').select('*').order('criado_em',{ascending:false}),
+    sb.from('tecnicos').select('*').order('nome')
+  ]);
+  if(ee){console.error(ee);toast('Erro ao carregar equipamentos.');return}
+  if(et){console.error(et);toast('Erro ao carregar técnicos.');return}
+  db.equipamentos=(equip||[]).map(e=>({...e,
+    entreguePor:e.entregue_por,cpfcnpj:e.cpf_cnpj,whatsapp:e.enviar_whatsapp,equipamento:e.equipamento,
+    serie:e.numero_serie,horas:e.horas_trabalhadas,chassi:e.numero_chassi,entrada:e.data_entrada,
+    obsEquip:e.observacoes,obsFotos:e.observacoes_fotos,tecnicoId:e.tecnico_id,os:e.numero_os,
+    token:e.token_acompanhamento,photos:[],messages:[],history:[]
+  }));
+  db.tecnicos=(tech||[]).map(t=>({id:t.id,nome:t.nome,telefone:t.telefone,email:t.email,ativo:t.ativo}));
+}
+async function loadRelations(e){
+  const [ph,ms,hi]=await Promise.all([
+    sb.from('fotos_equipamento').select('*').eq('equipamento_id',e.id).order('data_hora'),
+    sb.from('mensagens_cliente').select('*').eq('equipamento_id',e.id).order('data_hora'),
+    sb.from('historico_status').select('*').eq('equipamento_id',e.id).order('data_hora')
+  ]);
+  e.photos=(ph.data||[]).map(p=>({name:p.nome_arquivo||'',data:p.caminho_arquivo}));
+  e.messages=(ms.data||[]).map(m=>({id:m.id,text:m.mensagem,unread:!m.visualizada,at:m.data_hora}));
+  e.history=(hi.data||[]).map(h=>({status:h.status,at:h.data_hora}));
+}
+function startCadastro(){draft={photos:[]};step=1;['entreguePor','cliente','telefone','cpfcnpj','email','equipamento','modelo','serie','horas','chassi','obsEquip','obsFotos'].forEach(id=>$(id).value='');$('whatsapp').checked=true;$('entrada').value=localDateTime();renderPhotos();updateStep();showScreen('cadastro')}
+function validCPF(v){const n=v.replace(/\D/g,'');if(n.length!==11||/^(\d)\1+$/.test(n))return false;let sum=0;for(let i=0;i<9;i++)sum+=+n[i]*(10-i);let r=(sum*10)%11;if(r===10)r=0;if(r!==+n[9])return false;sum=0;for(let i=0;i<10;i++)sum+=+n[i]*(11-i);r=(sum*10)%11;if(r===10)r=0;return r===+n[10]}
+function validCNPJ(v){const n=v.replace(/\D/g,'');if(n.length!==14||/^(\d)\1+$/.test(n))return false;const calc=len=>{let pos=len-7,sum=0;for(let i=len;i>=1;i--){sum+=+n[len-i]*pos--;if(pos<2)pos=9}let r=sum%11;return r<2?0:11-r};return calc(12)===+n[12]&&calc(13)===+n[13]}
+function validateStep1(){if(!$('entreguePor').value.trim()||!$('cliente').value.trim()||!$('telefone').value.trim()){toast('Preencha Entregue por, Cliente e Telefone.');return false}const doc=$('cpfcnpj').value.trim();if(doc){const n=doc.replace(/\D/g,'');if(n.length===11&&!validCPF(doc)){toast('CPF inválido.');return false}if(n.length===14&&!validCNPJ(doc)){toast('CNPJ inválido.');return false}if(n.length!==11&&n.length!==14){toast('CPF/CNPJ inválido.');return false}}if($('email').value&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('email').value)){toast('E-mail inválido.');return false}return true}
+function nextStep(){if(step===1&&!validateStep1())return;if(step<3){step++;updateStep();return}finalize()}
+function prevStep(){if(step>1){step--;updateStep()}else showScreen('home')}
+function updateStep(){[1,2,3].forEach(i=>$('bar'+i).classList.toggle('active',i<=step));$('stepLabel').textContent=`ETAPA ${step} DE 3`;const titles=['Dados do cliente','Dados do equipamento','Fotos do equipamento'];const subs=['Informe os dados de quem entregou o equipamento.','Informe os dados do equipamento recebido.','Adicione fotos e observações do estado visual.'];$('stepTitle').textContent=titles[step-1];$('stepSub').textContent=subs[step-1];[1,2,3].forEach(i=>$('step'+i).style.display=i===step?'block':'none');$('nextBtn').textContent=step===3?'✓ Finalizar cadastro':'Avançar →'}
+function readFiles(files){[...files].forEach(file=>{const r=new FileReader();r.onload=e=>{draft.photos.push({name:file.name,data:e.target.result});renderPhotos()};r.readAsDataURL(file)})}
+$('cameraInput').addEventListener('change',e=>readFiles(e.target.files));$('galleryInput').addEventListener('change',e=>readFiles(e.target.files));
+function renderPhotos(){$('photos').innerHTML=draft.photos.length?draft.photos.map((p,i)=>`<div class="photo"><img src="${p.data}"><button onclick="draft.photos.splice(${i},1);renderPhotos()">×</button></div>`).join(''):'<div class="empty" style="width:100%;padding:25px">Nenhuma foto adicionada.</div>'}
+async function finalize(){
+  // Abre a janela do WhatsApp imediatamente, ainda dentro do clique do usuário.
+  // Isso evita que Chrome/Android bloqueie a abertura como pop-up depois do await do Supabase.
+  const waWindow = $('whatsapp').checked ? window.open('about:blank','_blank') : null;
+
+  const payload={cliente:$('cliente').value.trim(),entregue_por:$('entreguePor').value.trim(),telefone:$('telefone').value.trim(),cpf_cnpj:$('cpfcnpj').value.trim()||null,email:$('email').value.trim()||null,enviar_whatsapp:$('whatsapp').checked,equipamento:$('equipamento').value.trim()||'Equipamento não informado',modelo:$('modelo').value.trim()||null,numero_serie:$('serie').value.trim()||null,horas_trabalhadas:$('horas').value.trim()||null,numero_chassi:$('chassi').value.trim()||null,data_entrada:new Date($('entrada').value).toISOString(),observacoes:$('obsEquip').value.trim()||null,observacoes_fotos:$('obsFotos').value.trim()||null,status:'Recebido'};
+
+  const {data:e,error}=await sb.from('equipamentos').insert(payload).select('id, token_acompanhamento, cliente, equipamento, data_entrada, enviar_whatsapp, telefone').single();
+  if(error){
+    if(waWindow && !waWindow.closed) waWindow.close();
+    console.error(error);toast('Erro ao cadastrar: '+error.message);return
+  }
+
+  // Garante um token válido para o link exclusivo do cliente.
+  if(!e.token_acompanhamento){
+    const token=(crypto.randomUUID?crypto.randomUUID().replaceAll('-',''):Date.now().toString(36)+Math.random().toString(36).slice(2));
+    const {data:updated,error:ue}=await sb.from('equipamentos').update({token_acompanhamento:token}).eq('id',e.id).select('id, token_acompanhamento, cliente, equipamento, data_entrada, enviar_whatsapp, telefone').single();
+    if(ue){
+      if(waWindow && !waWindow.closed) waWindow.close();
+      console.error(ue);toast('Equipamento salvo, mas não foi possível gerar o link do cliente: '+ue.message);return;
+    }
+    Object.assign(e,updated);
+  }
+
+  const {error:he}=await sb.from('historico_status').insert({equipamento_id:e.id,status:'Recebido'});
+  if(he)console.error(he);
+
+  if(draft.photos.length){
+    const rows=draft.photos.map(p=>({equipamento_id:e.id,nome_arquivo:p.name,caminho_arquivo:p.data}));
+    const {error:pe}=await sb.from('fotos_equipamento').insert(rows);
+    if(pe)console.error(pe)
+  }
+
+  // Monta e abre a conversa somente depois que o cadastro foi confirmado.
+  if(e.enviar_whatsapp && e.token_acompanhamento){
+    const link=publicLink(e.token_acompanhamento);
+    const msg=`Olá, ${e.cliente}!\n\nSeu equipamento foi recebido pela WCS GERADORES.\n\n🔧 Equipamento: ${e.equipamento}\n📅 Entrada: ${fmt(e.data_entrada)}\n📌 Status: Recebido\n\nAcompanhe o andamento do serviço pelo link abaixo:\n${link}\n\nWCS GERADORES\nEnergia que move resultados.`;
+    const url=whatsappUrl(e.telefone,msg);
+    if(waWindow && !waWindow.closed){
+      waWindow.location.href=url;
+    }else{
+      // Fallback caso o navegador bloqueie a nova janela.
+      window.location.href=url;
+      return;
+    }
+  }
+
+  await loadAll();
+  toast('Equipamento cadastrado online com sucesso!');
+  showSupervisao()
+}
+async function showSupervisao(){await loadAll();renderTable();showScreen('supervisao')}
+function renderTable(){const q=($('search')?.value||'').toLowerCase(),sf=$('statusFilter')?.value||'';const list=db.equipamentos.filter(e=>(!q||[e.equipamento,e.cliente,e.os,e.serie].join(' ').toLowerCase().includes(q))&&(!sf||e.status===sf));$('tbody').innerHTML=list.length?list.map(e=>{const t=db.tecnicos.find(t=>t.id===e.tecnicoId);return `<tr class="clickrow" onclick="openDetail('${e.id}')"><td><b>${esc(e.equipamento)}</b><br><small>${esc(e.modelo||'')}</small></td><td>${esc(e.cliente)}</td><td><span class="status ${statusClass(e.status)}">${e.status}</span></td><td>${esc(t?.nome||'-')}</td><td><b>${esc(e.os||'-')}</b></td><td>${fmt(e.entrada)}</td><td>${esc(e.entreguePor)}</td></tr>`}).join(''):`<tr><td colspan="7"><div class="empty">Nenhum equipamento encontrado.</div></td></tr>`}
+async function openDetail(id){currentId=id;const e=db.equipamentos.find(x=>x.id===id);if(!e)return;await loadRelations(e);$('dEquip').textContent=e.equipamento;$('dCliente').textContent=`Cliente: ${e.cliente}`;const t=db.tecnicos.find(t=>t.id===e.tecnicoId);const items=[['Entregue por',e.entreguePor],['Telefone',e.telefone],['CPF/CNPJ',e.cpfcnpj||'-'],['E-mail',e.email||'-'],['Modelo',e.modelo||'-'],['Nº de série',e.serie||'-'],['Horas trabalhadas',e.horas||'-'],['Nº do chassi',e.chassi||'-'],['Data/hora de entrada',fmt(e.entrada)],['WhatsApp',e.whatsapp?'Sim':'Não'],['Observações',e.obsEquip||'-'],['Obs. fotos',e.obsFotos||'-']];$('infoGrid').innerHTML=items.map(x=>`<div class="info"><small>${x[0]}</small><b>${esc(x[1])}</b></div>`).join('');$('dTecnico').innerHTML='<option value="">— Sem técnico —</option>'+db.tecnicos.filter(x=>x.ativo!==false).map(x=>`<option value="${x.id}" ${x.id===e.tecnicoId?'selected':''}>${esc(x.nome)}</option>`).join('');$('dTecnico').onchange=()=>selectTecnico($('dTecnico').value);$('dOS').value=e.os||'';$('dOS').onchange=()=>saveOS();
+  const stages=['Recebido','Levantamento de orçamento','Em execução','Finalizado'],idx=stages.indexOf(e.status);$('timeline').innerHTML=stages.map((s,i)=>`<div class="stage ${i===idx?'current':''} ${i<idx?'done':''}"><div><b>${s}</b><br><small>${i<=idx?(e.history.find(h=>h.status===s)?fmt(e.history.find(h=>h.status===s).at):'Concluído'):'Aguardando'}</small></div>${i===idx&&i<3?`<button class="btn primary" onclick="advanceStatus('${e.id}')">Avançar →</button>`:''}</div>`).join('');$('clientMessages').innerHTML=e.status==='Levantamento de orçamento'?(e.messages.length?e.messages.map(m=>`<div class="message ${m.unread?'new':''}"><b>${m.unread?'🔴 Nova mensagem':'💬 Cliente'}</b><p>${esc(m.text)}</p><small>${fmt(m.at)}</small></div>`).join(''):'<div class="empty" style="padding:20px">Nenhuma observação do cliente.</div>'):'<div class="empty" style="padding:20px">O campo de mensagem do cliente aparece somente durante o levantamento de orçamento.</div>';$('detailPhotos').innerHTML=e.photos.length?e.photos.map(p=>`<div class="photo"><img src="${p.data}"></div>`).join(''):'<div class="empty" style="padding:20px">Nenhuma foto.</div>';showScreen('detalhe')}
+async function selectTecnico(value){if(!currentId)return;const {error}=await sb.from('equipamentos').update({tecnico_id:value||null}).eq('id',currentId);if(error){toast('Erro ao salvar técnico.');console.error(error);return}const e=db.equipamentos.find(x=>x.id===currentId);if(e)e.tecnicoId=value||'';toast('Técnico atualizado.');renderTable()}
+async function saveOS(){if(!currentId)return;const value=$('dOS').value.trim()||null;const {error}=await sb.from('equipamentos').update({numero_os:value}).eq('id',currentId);if(error){toast('Erro ao salvar OS.');console.error(error);return}const e=db.equipamentos.find(x=>x.id===currentId);if(e)e.os=value||'';toast('OS atualizada.');renderTable()}
+async function advanceStatus(id){const e=db.equipamentos.find(x=>x.id===id);if(!e)return;const selected=$('dTecnico')?.value||e.tecnicoId||'';if(selected!==e.tecnicoId){const {error}=await sb.from('equipamentos').update({tecnico_id:selected||null}).eq('id',id);if(error){toast('Erro ao salvar técnico.');return}e.tecnicoId=selected}const os=$('dOS')?.value.trim()||e.os||'';if(os!==e.os){const {error}=await sb.from('equipamentos').update({numero_os:os||null}).eq('id',id);if(error){toast('Erro ao salvar OS.');return}e.os=os}const next={'Recebido':'Levantamento de orçamento','Levantamento de orçamento':'Em execução','Em execução':'Finalizado'}[e.status];if(!next)return;if(next==='Levantamento de orçamento'&&!e.tecnicoId){toast('Selecione um técnico antes de avançar.');return}const {error}=await sb.from('equipamentos').update({status:next}).eq('id',id);if(error){toast('Erro ao atualizar status: '+error.message);return}const {error:he}=await sb.from('historico_status').insert({equipamento_id:id,status:next});if(he)console.error(he);toast('Status atualizado para: '+next);await loadAll();await openDetail(id)}
+function showTecnicos(){renderTechs();showScreen('tecnicos')}
+function renderTechs(){$('techList').innerHTML=db.tecnicos.length?db.tecnicos.map(t=>`<div class="tech"><b>👨‍🔧 ${esc(t.nome)}</b><p style="color:#9fb0bf">${esc(t.telefone||'Sem telefone')}<br>${esc(t.email||'Sem e-mail')}</p><span class="status ${t.ativo!==false?'s-exec':'s-fin'}">${t.ativo!==false?'ATIVO':'INATIVO'}</span><div style="display:flex;gap:7px;justify-content:flex-end;margin-top:12px"><button class="btn ghost" onclick="editTech('${t.id}')">✏️ Alterar</button><button class="btn danger" onclick="deleteTech('${t.id}')">🗑️ Excluir</button></div></div>`).join(''):'<div class="empty" style="grid-column:1/-1">Nenhum técnico cadastrado.</div>'}
+function openTechModal(id=''){editingTechId=id;const t=id?db.tecnicos.find(x=>x.id===id):null;$('techModalTitle').textContent=t?'Alterar técnico':'Novo técnico';$('techName').value=t?.nome||'';$('techPhone').value=t?.telefone||'';$('techEmail').value=t?.email||'';$('techModal').classList.add('show')}
+function editTech(id){openTechModal(id)}
+function closeTechModal(){editingTechId='';$('techModal').classList.remove('show')}
+async function saveTech(){const n=$('techName').value.trim();if(!n){toast('Informe o nome do técnico.');return}const payload={nome:n,telefone:$('techPhone').value.trim()||null,email:$('techEmail').value.trim()||null};let q;if(editingTechId){q=await sb.from('tecnicos').update(payload).eq('id',editingTechId)}else{q=await sb.from('tecnicos').insert({...payload,ativo:true})}if(q.error){toast('Erro ao salvar técnico: '+q.error.message);console.error(q.error);return}closeTechModal();await loadAll();renderTechs();toast(editingTechId?'Técnico alterado.':'Técnico cadastrado online.')}
+async function deleteTech(id){const t=db.tecnicos.find(x=>x.id===id);if(!t)return;if(!confirm(`Excluir o técnico "${t.nome}"?`))return;const {error}=await sb.from('tecnicos').delete().eq('id',id);if(error){toast('Erro ao excluir técnico: '+error.message);console.error(error);return}await loadAll();renderTechs();toast('Técnico excluído.')}
+async function toggleTech(id){const t=db.tecnicos.find(x=>x.id===id);if(!t)return;const {error}=await sb.from('tecnicos').update({ativo:t.ativo===false}).eq('id',id);if(error){toast('Erro ao alterar técnico.');return}await loadAll();renderTechs()}
+
+function getPublicBase(){return window.location.origin+window.location.pathname.replace(/\/$/,'')+'/'}
+function publicLink(token){return getPublicBase()+'?token='+encodeURIComponent(token)}
+function whatsappUrl(phone,text){const n=(phone||'').replace(/\D/g,'');const normalized=n.startsWith('55')?n:'55'+n;return 'https://wa.me/'+normalized+'?text='+encodeURIComponent(text)}
+function sendWhatsAppForEquipment(e){
+  if(!e || !e.whatsapp)return;
+  const link=publicLink(e.token || e.token_acompanhamento);
+  const msg=`Olá, ${e.cliente}!\n\nSeu equipamento foi recebido pela WCS GERADORES.\n\n🔧 Equipamento: ${e.equipamento}\n📅 Entrada: ${fmt(e.entrada)}\n📌 Status: Recebido\n\nAcompanhe o andamento do serviço pelo link abaixo:\n${link}\n\nWCS GERADORES\nEnergia que move resultados.`;
+  window.open(whatsappUrl(e.telefone,msg),'_blank');
+}
+
+async function openClientByToken(token){
+  const {data,error}=await sb.from('equipamentos').select('*,tecnicos(nome)').eq('token_acompanhamento',token).maybeSingle();
+  if(error||!data){showScreen('clienteView');$('clientContent').innerHTML='<div class="empty">Link de acompanhamento inválido ou equipamento não encontrado.</div>';return}
+  renderClientView(data);showScreen('clienteView');
+}
+function renderClientView(e){
+  const stages=['Recebido','Levantamento de orçamento','Em execução','Finalizado'];const idx=stages.indexOf(e.status);
+  const pct=idx===0?8:idx===1?38:idx===2?70:100;
+  const canMsg=e.status==='Levantamento de orçamento';
+  $('clientContent').innerHTML=`<div class="info-grid"><div class="info"><small>Cliente</small><b>${esc(e.cliente)}</b></div><div class="info"><small>Equipamento</small><b>${esc(e.equipamento)}</b></div><div class="info"><small>Modelo</small><b>${esc(e.modelo||'-')}</b></div><div class="info"><small>Ordem de serviço</small><b>${esc(e.numero_os||'Ainda não informada')}</b></div></div><div style="margin:25px 0"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b>STATUS ATUAL</b><span class="status ${statusClass(e.status)}">${esc(e.status)}</span></div><div style="height:12px;background:#253442;border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#1597ff,#18b879);border-radius:99px"></div></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;font-size:11px;color:#9fb0bf;text-align:center">${stages.map((s,i)=>`<span style="color:${i<=idx?'#eef4f8':'#71808d'}">${s}</span>`).join('')}</div></div><div class="card panel" style="box-shadow:none"><h3>Detalhes do atendimento</h3><p><b>Técnico responsável:</b> ${esc(e.tecnicos?.nome||'Ainda não definido')}</p><p><b>Data de entrada:</b> ${fmt(e.data_entrada)}</p></div>${canMsg?`<div class="customer-box"><h3>💬 Complementar o orçamento</h3><p style="color:#9fb0bf">Esqueceu de informar alguma coisa? Envie uma observação para nossa equipe.</p><textarea id="clientMsg" placeholder="Ex.: Também preciso trocar a tomada da parte frontal."></textarea><button class="btn primary" style="margin-top:10px;width:100%" onclick="sendClientMessage('${e.id}')">📩 Enviar observação</button></div>`:''}<div id="clientSent" style="margin-top:15px"></div>`;
+}
+async function sendClientMessage(id){const el=$('clientMsg');const text=el?.value.trim();if(!text){toast('Digite uma observação.');return}const {error}=await sb.from('mensagens_cliente').insert({equipamento_id:id,mensagem:text});if(error){toast('Não foi possível enviar a observação.');console.error(error);return}el.value='';$('clientSent').innerHTML='<div class="message">✅ Observação enviada para a WCS GERADORES.</div>'}
+
+// Carrega os dados assim que a página abre.
+(async()=>{await loadAll();const token=new URLSearchParams(window.location.search).get('token');if(token){await openClientByToken(token)}})();
+
+</script>
+</body>
+</html>
