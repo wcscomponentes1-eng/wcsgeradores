@@ -52,10 +52,20 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue)}textarea{min-he
 <div class="app">
 <header>
   <div class="brand"><div class="logo">WCS</div><div><h1>WCS GERADORES</h1><small>Controle de equipamentos e serviços</small></div></div>
-  <div class="top-actions"><button class="btn ghost" id="homeBtn" onclick="showScreen('home')">⌂ Início</button></div>
+  <div class="top-actions"><button class="btn ghost" id="homeBtn" onclick="showScreen('home')">⌂ Início</button><button class="btn ghost" id="logoutBtn" onclick="logout()">Sair</button></div>
 </header>
 
-<section id="home" class="screen active">
+<section id="login" class="screen active">
+  <div class="form-card card" style="max-width:460px;margin-top:70px">
+    <div style="text-align:center;margin-bottom:28px"><div class="logo" style="margin:0 auto 12px">WCS</div><h2>Acesso administrativo</h2><div class="subtitle">Entre para acessar o sistema WCS GERADORES.</div></div>
+    <div class="field"><label>E-mail</label><input id="loginEmail" type="email" autocomplete="username" placeholder="seu@email.com"></div>
+    <div class="field" style="margin-top:14px"><label>Senha</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Sua senha" onkeydown="if(event.key==='Enter')login()"></div>
+    <button class="btn primary" style="width:100%;margin-top:18px" onclick="login()">🔐 Entrar</button>
+    <div id="loginError" style="color:#ff8585;text-align:center;margin-top:12px"></div>
+  </div>
+</section>
+
+<section id="home" class="screen">
   <div class="card" style="padding:30px">
     <h2>Central de atendimento</h2><div class="subtitle">Cadastre equipamentos e acompanhe cada serviço.</div>
     <div class="home-grid">
@@ -173,12 +183,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue)}textarea{min-he
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL = 'https://lyvjxpsxljamhcnrzvzx.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Y5Cm6hkHUiiBP0rfmPuYrA_GLrKylaY';
+const SUPABASE_URL = 'https://jgbifulfbuxxepgjkacw.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_1-wAobyjl5cqUzMcK2hOkg_fdudXmjX';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let db={equipamentos:[],tecnicos:[]};
+let editingTechId='';
 let draft={photos:[]}, step=1, currentId=null;
 const $=id=>document.getElementById(id);
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
@@ -190,28 +201,28 @@ function statusClass(s){return s==='Recebido'?'s-recebido':s==='Levantamento de 
 
 async function loadAll(){
   const [{data:equip,error:ee},{data:tech,error:et}]=await Promise.all([
-    sb.from('equipamentos').select('*').order('criado_em',{ascending:false}),
+    sb.from('equipamentos').select('*').order('created_at',{ascending:false}),
     sb.from('tecnicos').select('*').order('nome')
   ]);
   if(ee){console.error(ee);toast('Erro ao carregar equipamentos.');return}
   if(et){console.error(et);toast('Erro ao carregar técnicos.');return}
   db.equipamentos=(equip||[]).map(e=>({...e,
-    entreguePor:e.entregue_por,cpfcnpj:e.cpf_cnpj,whatsapp:e.enviar_whatsapp,equipamento:e.equipamento,
-    serie:e.numero_serie,horas:e.horas_trabalhadas,chassi:e.numero_chassi,entrada:e.data_entrada,
-    obsEquip:e.observacoes,obsFotos:e.observacoes_fotos,tecnicoId:e.tecnico_id,os:e.numero_os,
+    entreguePor:e.entregue_por,cliente:e.nome_cliente,telefone:e.telefone_cliente,cpfcnpj:e.cpf_cnpj,whatsapp:e.whatsapp_atualizacoes,equipamento:e.equipamento,
+    serie:e.numero_serie,horas:e.horas_trabalhadas,chassi:e.numero_chassi,entrada:e.data_entrega,
+    obsEquip:e.observacoes,obsFotos:'',tecnicoId:e.tecnico_id,os:e.numero_os,
     token:e.token_acompanhamento,photos:[],messages:[],history:[]
   }));
   db.tecnicos=(tech||[]).map(t=>({id:t.id,nome:t.nome,telefone:t.telefone,email:t.email,ativo:t.ativo}));
 }
 async function loadRelations(e){
   const [ph,ms,hi]=await Promise.all([
-    sb.from('fotos_equipamento').select('*').eq('equipamento_id',e.id).order('data_hora'),
-    sb.from('mensagens_cliente').select('*').eq('equipamento_id',e.id).order('data_hora'),
-    sb.from('historico_status').select('*').eq('equipamento_id',e.id).order('data_hora')
+    sb.from('fotos_equipamento').select('*').eq('equipamento_id',e.id).order('created_at'),
+    sb.from('mensagens_cliente').select('*').eq('equipamento_id',e.id).order('created_at'),
+    sb.from('historico_status').select('*').eq('equipamento_id',e.id).order('created_at')
   ]);
-  e.photos=(ph.data||[]).map(p=>({name:p.nome_arquivo||'',data:p.caminho_arquivo}));
-  e.messages=(ms.data||[]).map(m=>({id:m.id,text:m.mensagem,unread:!m.visualizada,at:m.data_hora}));
-  e.history=(hi.data||[]).map(h=>({status:h.status,at:h.data_hora}));
+  e.photos=(ph.data||[]).map(p=>({name:'Foto',data:p.arquivo_path}));
+  e.messages=(ms.data||[]).map(m=>({id:m.id,text:m.mensagem,unread:!m.lida,at:m.created_at}));
+  e.history=(hi.data||[]).map(h=>({status:h.status_novo,at:h.created_at}));
 }
 function startCadastro(){draft={photos:[]};step=1;['entreguePor','cliente','telefone','cpfcnpj','email','equipamento','modelo','serie','horas','chassi','obsEquip','obsFotos'].forEach(id=>$(id).value='');$('whatsapp').checked=true;$('entrada').value=localDateTime();renderPhotos();updateStep();showScreen('cadastro')}
 function validCPF(v){const n=v.replace(/\D/g,'');if(n.length!==11||/^(\d)\1+$/.test(n))return false;let sum=0;for(let i=0;i<9;i++)sum+=+n[i]*(10-i);let r=(sum*10)%11;if(r===10)r=0;if(r!==+n[9])return false;sum=0;for(let i=0;i<10;i++)sum+=+n[i]*(11-i);r=(sum*10)%11;if(r===10)r=0;return r===+n[10]}
@@ -228,38 +239,27 @@ async function finalize(){
   // Isso evita que Chrome/Android bloqueie a abertura como pop-up depois do await do Supabase.
   const waWindow = $('whatsapp').checked ? window.open('about:blank','_blank') : null;
 
-  const payload={cliente:$('cliente').value.trim(),entregue_por:$('entreguePor').value.trim(),telefone:$('telefone').value.trim(),cpf_cnpj:$('cpfcnpj').value.trim()||null,email:$('email').value.trim()||null,enviar_whatsapp:$('whatsapp').checked,equipamento:$('equipamento').value.trim()||'Equipamento não informado',modelo:$('modelo').value.trim()||null,numero_serie:$('serie').value.trim()||null,horas_trabalhadas:$('horas').value.trim()||null,numero_chassi:$('chassi').value.trim()||null,data_entrada:new Date($('entrada').value).toISOString(),observacoes:$('obsEquip').value.trim()||null,observacoes_fotos:$('obsFotos').value.trim()||null,status:'Recebido'};
+  const payload={nome_cliente:$('cliente').value.trim(),entregue_por:$('entreguePor').value.trim(),telefone_cliente:$('telefone').value.trim(),cpf_cnpj:$('cpfcnpj').value.trim()||null,email_cliente:$('email').value.trim()||null,whatsapp_atualizacoes:$('whatsapp').checked,equipamento:$('equipamento').value.trim()||'Equipamento não informado',modelo:$('modelo').value.trim()||null,numero_serie:$('serie').value.trim()||null,horas_trabalhadas:$('horas').value.trim()||null,numero_chassi:$('chassi').value.trim()||null,data_entrega:new Date($('entrada').value).toISOString(),observacoes:$('obsEquip').value.trim()||null,status:'Recebido'};
 
-  const {data:e,error}=await sb.from('equipamentos').insert(payload).select('id, token_acompanhamento, cliente, equipamento, data_entrada, enviar_whatsapp, telefone').single();
+  const {data:e,error}=await sb.from('equipamentos').insert(payload).select().single();
   if(error){
     if(waWindow && !waWindow.closed) waWindow.close();
     console.error(error);toast('Erro ao cadastrar: '+error.message);return
   }
 
-  // Garante um token válido para o link exclusivo do cliente.
-  if(!e.token_acompanhamento){
-    const token=(crypto.randomUUID?crypto.randomUUID().replaceAll('-',''):Date.now().toString(36)+Math.random().toString(36).slice(2));
-    const {data:updated,error:ue}=await sb.from('equipamentos').update({token_acompanhamento:token}).eq('id',e.id).select('id, token_acompanhamento, cliente, equipamento, data_entrada, enviar_whatsapp, telefone').single();
-    if(ue){
-      if(waWindow && !waWindow.closed) waWindow.close();
-      console.error(ue);toast('Equipamento salvo, mas não foi possível gerar o link do cliente: '+ue.message);return;
-    }
-    Object.assign(e,updated);
-  }
-
-  const {error:he}=await sb.from('historico_status').insert({equipamento_id:e.id,status:'Recebido'});
+  const {error:he}=await sb.from('historico_status').insert({equipamento_id:e.id,status_anterior:null,status_novo:'Recebido'});
   if(he)console.error(he);
 
   if(draft.photos.length){
-    const rows=draft.photos.map(p=>({equipamento_id:e.id,nome_arquivo:p.name,caminho_arquivo:p.data}));
+    const rows=draft.photos.map(p=>({equipamento_id:e.id,arquivo_path:p.data,observacao:p.name}));
     const {error:pe}=await sb.from('fotos_equipamento').insert(rows);
     if(pe)console.error(pe)
   }
 
   // Monta e abre a conversa somente depois que o cadastro foi confirmado.
-  if(e.enviar_whatsapp && e.token_acompanhamento){
-    const link=publicLink(e.token_acompanhamento);
-    const msg=`Olá, ${e.cliente}!\n\nSeu equipamento foi recebido pela WCS GERADORES.\n\n🔧 Equipamento: ${e.equipamento}\n📅 Entrada: ${fmt(e.data_entrada)}\n📌 Status: Recebido\n\nAcompanhe o andamento do serviço pelo link abaixo:\n${link}\n\nWCS GERADORES\nEnergia que move resultados.`;
+  if(e.whatsapp_atualizacoes){
+    const link=publicLink(e.token);
+    const msg=`Olá, ${e.nome_cliente}!\n\nSeu equipamento foi recebido pela WCS GERADORES.\n\n🔧 Equipamento: ${e.equipamento}\n📅 Entrada: ${fmt(e.data_entrega)}\n📌 Status: Recebido\n\nAcompanhe o andamento do serviço pelo link abaixo:\n${link}\n\nWCS GERADORES\nEnergia que move resultados.`;
     const url=whatsappUrl(e.telefone,msg);
     if(waWindow && !waWindow.closed){
       waWindow.location.href=url;
@@ -275,12 +275,12 @@ async function finalize(){
   showSupervisao()
 }
 async function showSupervisao(){await loadAll();renderTable();showScreen('supervisao')}
-function renderTable(){const q=($('search')?.value||'').toLowerCase(),sf=$('statusFilter')?.value||'';const list=db.equipamentos.filter(e=>(!q||[e.equipamento,e.cliente,e.os,e.serie].join(' ').toLowerCase().includes(q))&&(!sf||e.status===sf));$('tbody').innerHTML=list.length?list.map(e=>{const t=db.tecnicos.find(t=>t.id===e.tecnicoId);return `<tr class="clickrow" onclick="openDetail('${e.id}')"><td><b>${esc(e.equipamento)}</b><br><small>${esc(e.modelo||'')}</small></td><td>${esc(e.cliente)}</td><td><span class="status ${statusClass(e.status)}">${e.status}</span></td><td>${esc(t?.nome||'-')}</td><td><b>${esc(e.os||'-')}</b></td><td>${fmt(e.entrada)}</td><td>${esc(e.entreguePor)}</td></tr>`}).join(''):`<tr><td colspan="7"><div class="empty">Nenhum equipamento encontrado.</div></td></tr>`}
+function renderTable(){const q=($('search')?.value||'').toLowerCase(),sf=$('statusFilter')?.value||'';const list=db.equipamentos.filter(e=>(!q||[e.equipamento,e.cliente,e.os,e.serie].join(' ').toLowerCase().includes(q))&&(!sf||e.status===sf));$('tbody').innerHTML=list.length?list.map(e=>{const t=db.tecnicos.find(t=>t.id===e.tecnicoId);return `<tr class="clickrow" onclick="openDetail('${e.id}')"><td><b>${esc(e.equipamento)}</b><br><small>${esc(e.modelo||'')}</small></td><td>${esc(e.nome_cliente)}</td><td><span class="status ${statusClass(e.status)}">${e.status}</span></td><td>${esc(t?.nome||'-')}</td><td><b>${esc(e.os||'-')}</b></td><td>${fmt(e.entrada)}</td><td>${esc(e.entreguePor)}</td></tr>`}).join(''):`<tr><td colspan="7"><div class="empty">Nenhum equipamento encontrado.</div></td></tr>`}
 async function openDetail(id){currentId=id;const e=db.equipamentos.find(x=>x.id===id);if(!e)return;await loadRelations(e);$('dEquip').textContent=e.equipamento;$('dCliente').textContent=`Cliente: ${e.cliente}`;const t=db.tecnicos.find(t=>t.id===e.tecnicoId);const items=[['Entregue por',e.entreguePor],['Telefone',e.telefone],['CPF/CNPJ',e.cpfcnpj||'-'],['E-mail',e.email||'-'],['Modelo',e.modelo||'-'],['Nº de série',e.serie||'-'],['Horas trabalhadas',e.horas||'-'],['Nº do chassi',e.chassi||'-'],['Data/hora de entrada',fmt(e.entrada)],['WhatsApp',e.whatsapp?'Sim':'Não'],['Observações',e.obsEquip||'-'],['Obs. fotos',e.obsFotos||'-']];$('infoGrid').innerHTML=items.map(x=>`<div class="info"><small>${x[0]}</small><b>${esc(x[1])}</b></div>`).join('');$('dTecnico').innerHTML='<option value="">— Sem técnico —</option>'+db.tecnicos.filter(x=>x.ativo!==false).map(x=>`<option value="${x.id}" ${x.id===e.tecnicoId?'selected':''}>${esc(x.nome)}</option>`).join('');$('dTecnico').onchange=()=>selectTecnico($('dTecnico').value);$('dOS').value=e.os||'';$('dOS').onchange=()=>saveOS();
   const stages=['Recebido','Levantamento de orçamento','Em execução','Finalizado'],idx=stages.indexOf(e.status);$('timeline').innerHTML=stages.map((s,i)=>`<div class="stage ${i===idx?'current':''} ${i<idx?'done':''}"><div><b>${s}</b><br><small>${i<=idx?(e.history.find(h=>h.status===s)?fmt(e.history.find(h=>h.status===s).at):'Concluído'):'Aguardando'}</small></div>${i===idx&&i<3?`<button class="btn primary" onclick="advanceStatus('${e.id}')">Avançar →</button>`:''}</div>`).join('');$('clientMessages').innerHTML=e.status==='Levantamento de orçamento'?(e.messages.length?e.messages.map(m=>`<div class="message ${m.unread?'new':''}"><b>${m.unread?'🔴 Nova mensagem':'💬 Cliente'}</b><p>${esc(m.text)}</p><small>${fmt(m.at)}</small></div>`).join(''):'<div class="empty" style="padding:20px">Nenhuma observação do cliente.</div>'):'<div class="empty" style="padding:20px">O campo de mensagem do cliente aparece somente durante o levantamento de orçamento.</div>';$('detailPhotos').innerHTML=e.photos.length?e.photos.map(p=>`<div class="photo"><img src="${p.data}"></div>`).join(''):'<div class="empty" style="padding:20px">Nenhuma foto.</div>';showScreen('detalhe')}
 async function selectTecnico(value){if(!currentId)return;const {error}=await sb.from('equipamentos').update({tecnico_id:value||null}).eq('id',currentId);if(error){toast('Erro ao salvar técnico.');console.error(error);return}const e=db.equipamentos.find(x=>x.id===currentId);if(e)e.tecnicoId=value||'';toast('Técnico atualizado.');renderTable()}
 async function saveOS(){if(!currentId)return;const value=$('dOS').value.trim()||null;const {error}=await sb.from('equipamentos').update({numero_os:value}).eq('id',currentId);if(error){toast('Erro ao salvar OS.');console.error(error);return}const e=db.equipamentos.find(x=>x.id===currentId);if(e)e.os=value||'';toast('OS atualizada.');renderTable()}
-async function advanceStatus(id){const e=db.equipamentos.find(x=>x.id===id);if(!e)return;const selected=$('dTecnico')?.value||e.tecnicoId||'';if(selected!==e.tecnicoId){const {error}=await sb.from('equipamentos').update({tecnico_id:selected||null}).eq('id',id);if(error){toast('Erro ao salvar técnico.');return}e.tecnicoId=selected}const os=$('dOS')?.value.trim()||e.os||'';if(os!==e.os){const {error}=await sb.from('equipamentos').update({numero_os:os||null}).eq('id',id);if(error){toast('Erro ao salvar OS.');return}e.os=os}const next={'Recebido':'Levantamento de orçamento','Levantamento de orçamento':'Em execução','Em execução':'Finalizado'}[e.status];if(!next)return;if(next==='Levantamento de orçamento'&&!e.tecnicoId){toast('Selecione um técnico antes de avançar.');return}const {error}=await sb.from('equipamentos').update({status:next}).eq('id',id);if(error){toast('Erro ao atualizar status: '+error.message);return}const {error:he}=await sb.from('historico_status').insert({equipamento_id:id,status:next});if(he)console.error(he);toast('Status atualizado para: '+next);await loadAll();await openDetail(id)}
+async function advanceStatus(id){const e=db.equipamentos.find(x=>x.id===id);if(!e)return;const selected=$('dTecnico')?.value||e.tecnicoId||'';if(selected!==e.tecnicoId){const {error}=await sb.from('equipamentos').update({tecnico_id:selected||null}).eq('id',id);if(error){toast('Erro ao salvar técnico.');return}e.tecnicoId=selected}const os=$('dOS')?.value.trim()||e.os||'';if(os!==e.os){const {error}=await sb.from('equipamentos').update({numero_os:os||null}).eq('id',id);if(error){toast('Erro ao salvar OS.');return}e.os=os}const next={'Recebido':'Levantamento de orçamento','Levantamento de orçamento':'Em execução','Em execução':'Finalizado'}[e.status];if(!next)return;if(next==='Levantamento de orçamento'&&!e.tecnicoId){toast('Selecione um técnico antes de avançar.');return}const {error}=await sb.from('equipamentos').update({status:next}).eq('id',id);if(error){toast('Erro ao atualizar status: '+error.message);return}const {error:he}=await sb.from('historico_status').insert({equipamento_id:id,status_anterior:e.status,status_novo:next});if(he)console.error(he);toast('Status atualizado para: '+next);await loadAll();await openDetail(id)}
 function showTecnicos(){renderTechs();showScreen('tecnicos')}
 function renderTechs(){$('techList').innerHTML=db.tecnicos.length?db.tecnicos.map(t=>`<div class="tech"><b>👨‍🔧 ${esc(t.nome)}</b><p style="color:#9fb0bf">${esc(t.telefone||'Sem telefone')}<br>${esc(t.email||'Sem e-mail')}</p><span class="status ${t.ativo!==false?'s-exec':'s-fin'}">${t.ativo!==false?'ATIVO':'INATIVO'}</span><div style="display:flex;gap:7px;justify-content:flex-end;margin-top:12px"><button class="btn ghost" onclick="editTech('${t.id}')">✏️ Alterar</button><button class="btn danger" onclick="deleteTech('${t.id}')">🗑️ Excluir</button></div></div>`).join(''):'<div class="empty" style="grid-column:1/-1">Nenhum técnico cadastrado.</div>'}
 function openTechModal(id=''){editingTechId=id;const t=id?db.tecnicos.find(x=>x.id===id):null;$('techModalTitle').textContent=t?'Alterar técnico':'Novo técnico';$('techName').value=t?.nome||'';$('techPhone').value=t?.telefone||'';$('techEmail').value=t?.email||'';$('techModal').classList.add('show')}
@@ -294,27 +294,51 @@ function getPublicBase(){return window.location.origin+window.location.pathname.
 function publicLink(token){return getPublicBase()+'?token='+encodeURIComponent(token)}
 function whatsappUrl(phone,text){const n=(phone||'').replace(/\D/g,'');const normalized=n.startsWith('55')?n:'55'+n;return 'https://wa.me/'+normalized+'?text='+encodeURIComponent(text)}
 function sendWhatsAppForEquipment(e){
-  if(!e || !e.whatsapp)return;
-  const link=publicLink(e.token || e.token_acompanhamento);
-  const msg=`Olá, ${e.cliente}!\n\nSeu equipamento foi recebido pela WCS GERADORES.\n\n🔧 Equipamento: ${e.equipamento}\n📅 Entrada: ${fmt(e.entrada)}\n📌 Status: Recebido\n\nAcompanhe o andamento do serviço pelo link abaixo:\n${link}\n\nWCS GERADORES\nEnergia que move resultados.`;
+  if(!e || !e.whatsapp_atualizacoes)return;
+  const link=publicLink(e.token);
+  const msg=`Olá, ${e.nome_cliente}!\n\nSeu equipamento foi recebido pela WCS GERADORES.\n\n🔧 Equipamento: ${e.equipamento}\n📅 Entrada: ${fmt(e.entrada)}\n📌 Status: Recebido\n\nAcompanhe o andamento do serviço pelo link abaixo:\n${link}\n\nWCS GERADORES\nEnergia que move resultados.`;
   window.open(whatsappUrl(e.telefone,msg),'_blank');
 }
 
-async function openClientByToken(token){
-  const {data,error}=await sb.from('equipamentos').select('*,tecnicos(nome)').eq('token_acompanhamento',token).maybeSingle();
-  if(error||!data){showScreen('clienteView');$('clientContent').innerHTML='<div class="empty">Link de acompanhamento inválido ou equipamento não encontrado.</div>';return}
-  renderClientView(data);showScreen('clienteView');
+async function openClientByToken(token){$('homeBtn').style.display='none';$('logoutBtn').style.display='none';
+  const {data,error}=await sb.rpc('consultar_acompanhamento',{p_token:token});
+  const e=(data||[])[0];
+  if(error||!e){showScreen('clienteView');$('clientContent').innerHTML='<div class="empty">Link de acompanhamento inválido ou equipamento não encontrado.</div>';return}
+  renderClientView(e);showScreen('clienteView');
 }
 function renderClientView(e){
   const stages=['Recebido','Levantamento de orçamento','Em execução','Finalizado'];const idx=stages.indexOf(e.status);
   const pct=idx===0?8:idx===1?38:idx===2?70:100;
   const canMsg=e.status==='Levantamento de orçamento';
-  $('clientContent').innerHTML=`<div class="info-grid"><div class="info"><small>Cliente</small><b>${esc(e.cliente)}</b></div><div class="info"><small>Equipamento</small><b>${esc(e.equipamento)}</b></div><div class="info"><small>Modelo</small><b>${esc(e.modelo||'-')}</b></div><div class="info"><small>Ordem de serviço</small><b>${esc(e.numero_os||'Ainda não informada')}</b></div></div><div style="margin:25px 0"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b>STATUS ATUAL</b><span class="status ${statusClass(e.status)}">${esc(e.status)}</span></div><div style="height:12px;background:#253442;border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#1597ff,#18b879);border-radius:99px"></div></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;font-size:11px;color:#9fb0bf;text-align:center">${stages.map((s,i)=>`<span style="color:${i<=idx?'#eef4f8':'#71808d'}">${s}</span>`).join('')}</div></div><div class="card panel" style="box-shadow:none"><h3>Detalhes do atendimento</h3><p><b>Técnico responsável:</b> ${esc(e.tecnicos?.nome||'Ainda não definido')}</p><p><b>Data de entrada:</b> ${fmt(e.data_entrada)}</p></div>${canMsg?`<div class="customer-box"><h3>💬 Complementar o orçamento</h3><p style="color:#9fb0bf">Esqueceu de informar alguma coisa? Envie uma observação para nossa equipe.</p><textarea id="clientMsg" placeholder="Ex.: Também preciso trocar a tomada da parte frontal."></textarea><button class="btn primary" style="margin-top:10px;width:100%" onclick="sendClientMessage('${e.id}')">📩 Enviar observação</button></div>`:''}<div id="clientSent" style="margin-top:15px"></div>`;
+  $('clientContent').innerHTML=`<div class="info-grid"><div class="info"><small>Cliente</small><b>${esc(e.nome_cliente)}</b></div><div class="info"><small>Equipamento</small><b>${esc(e.equipamento)}</b></div><div class="info"><small>Modelo</small><b>${esc(e.modelo||'-')}</b></div><div class="info"><small>Ordem de serviço</small><b>${esc(e.numero_os||'Ainda não informada')}</b></div></div><div style="margin:25px 0"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b>STATUS ATUAL</b><span class="status ${statusClass(e.status)}">${esc(e.status)}</span></div><div style="height:12px;background:#253442;border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#1597ff,#18b879);border-radius:99px"></div></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;font-size:11px;color:#9fb0bf;text-align:center">${stages.map((s,i)=>`<span style="color:${i<=idx?'#eef4f8':'#71808d'}">${s}</span>`).join('')}</div></div><div class="card panel" style="box-shadow:none"><h3>Detalhes do atendimento</h3><p><b>Técnico responsável:</b> ${esc(e.tecnico_nome||'Ainda não definido')}</p><p><b>Data de entrada:</b> ${fmt(e.data_entrega)}</p></div>${canMsg?`<div class="customer-box"><h3>💬 Complementar o orçamento</h3><p style="color:#9fb0bf">Esqueceu de informar alguma coisa? Envie uma observação para nossa equipe.</p><textarea id="clientMsg" placeholder="Ex.: Também preciso trocar a tomada da parte frontal."></textarea><button class="btn primary" style="margin-top:10px;width:100%" onclick="sendClientMessage('${e.id}')">📩 Enviar observação</button></div>`:''}<div id="clientSent" style="margin-top:15px"></div>`;
 }
-async function sendClientMessage(id){const el=$('clientMsg');const text=el?.value.trim();if(!text){toast('Digite uma observação.');return}const {error}=await sb.from('mensagens_cliente').insert({equipamento_id:id,mensagem:text});if(error){toast('Não foi possível enviar a observação.');console.error(error);return}el.value='';$('clientSent').innerHTML='<div class="message">✅ Observação enviada para a WCS GERADORES.</div>'}
+async function sendClientMessage(id){const el=$('clientMsg');const text=el?.value.trim();if(!text){toast('Digite uma observação.');return}const token=new URLSearchParams(window.location.search).get('token');const {error}=await sb.rpc('enviar_mensagem_cliente',{p_token:token,p_mensagem:text});if(error){toast('Não foi possível enviar a observação.');console.error(error);return}el.value='';$('clientSent').innerHTML='<div class="message">✅ Observação enviada para a WCS GERADORES.</div>'}
 
-// Carrega os dados assim que a página abre.
-(async()=>{await loadAll();const token=new URLSearchParams(window.location.search).get('token');if(token){await openClientByToken(token)}})();
+async function login(){
+  const email=$('loginEmail').value.trim(),password=$('loginPassword').value;
+  $('loginError').textContent='';
+  if(!email||!password){$('loginError').textContent='Informe e-mail e senha.';return}
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error){$('loginError').textContent='E-mail ou senha inválidos.';console.error(error);return}
+  showScreen('home');await loadAll();
+}
+async function logout(){await sb.auth.signOut();db={equipamentos:[],tecnicos:[]};showScreen('login')}
+function showAdminHome(){showScreen('home')}
+
+// Inicialização segura: cliente por token não entra no painel administrativo.
+(async()=>{
+  const token=new URLSearchParams(window.location.search).get('token');
+  if(token){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    await openClientByToken(token);
+    return;
+  }
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){showScreen('home');await loadAll()}else showScreen('login');
+  sb.auth.onAuthStateChange((event,session)=>{
+    if(event==='SIGNED_OUT') showScreen('login');
+  });
+})();
 
 </script>
 </body>
