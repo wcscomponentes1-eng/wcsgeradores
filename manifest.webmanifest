@@ -3,7 +3,7 @@
   "short_name": "WCS Geradores",
   "description": "Controle de equipamentos e serviços da WCS Geradores",
   "start_url": "./",
-  "scope": "./",
+"scope": "./",
   "display": "standalone",
   "background_color": "#0b1118",
   "theme_color": "#0b1118",
