@@ -1,0 +1,21 @@
+WCS GERADORES — PACOTE COMPLETO PWA
+
+Estrutura para o GitHub:
+wcsgeradores/
+├── index.html
+├── manifest.webmanifest
+├── sw.js
+└── icons/
+    ├── icon-192.png
+    ├── icon-512.png
+    └── favicon.ico
+
+IMPORTANTE:
+1. O index.html deve ficar na RAIZ do repositório.
+2. manifest.webmanifest deve ficar na RAIZ.
+3. sw.js deve ficar na RAIZ.
+4. Os ícones devem ficar dentro da pasta icons.
+5. Não coloque icon-192.png ou icon-512.png na raiz.
+6. O site deve continuar sendo publicado pelo GitHub Pages em HTTPS.
+
+Este pacote já contém a ligação do index.html com o manifest e o registro do Service Worker.
