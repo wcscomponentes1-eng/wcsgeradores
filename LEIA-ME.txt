@@ -30,3 +30,10 @@ CORREÇÃO DO CAMPO DE TELEFONE:
 - Se o usuário apagar o +, o sistema recoloca automaticamente.
 - Ao sair do campo vazio, o + não fica sozinho.
 - Aplicado ao cliente, técnico e telefone da OS.
+
+CORREÇÃO DEFINITIVA DE ATUALIZAÇÃO:
+- O sistema não reconstrói telas automaticamente enquanto o usuário estiver digitando.
+- A proteção vale para INPUT, TEXTAREA, SELECT, BUTTON e elementos editáveis.
+- A mensagem do cliente não perde mais o texto/cursor por causa da atualização automática.
+- A mesma proteção foi aplicada ao Painel de Supervisão e às demais áreas administrativas.
+- A atualização automática continua funcionando quando o usuário não está interagindo com campos.
