@@ -49,6 +49,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue)}textarea{min-he
 .toast{position:fixed;right:20px;bottom:20px;background:#142431;border:1px solid #31536c;padding:14px 18px;border-radius:12px;display:none;z-index:30}.toast.show{display:block}
 .empty{text-align:center;padding:45px;color:var(--muted)}
 @media(max-width:900px){.home-grid,.detail,.tech-list{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.form-card{padding:20px}.app{padding:13px}.info-grid{grid-template-columns:1fr}}
+
+.calendar-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.calendar-title{font-size:20px;font-weight:800}.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.cal-day{min-height:72px;border:1px solid var(--line);border-radius:10px;background:#0d1720;padding:8px;cursor:pointer}.cal-day:hover{border-color:#378fd0}.cal-day.muted{opacity:.35;cursor:default}.cal-day.today{box-shadow:inset 0 0 0 2px var(--blue)}.cal-day.selected{background:#15324a;border-color:var(--blue)}.cal-day b{font-size:13px}.cal-week{color:#9fb0bf;text-align:center;font-size:11px;padding:4px}.slot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:12px}.slot{padding:11px;border:1px solid #31516b;border-radius:10px;background:#0d1720;color:#fff;font-weight:700}.slot.busy{background:#222b33;color:#6f7d88;border-color:#343e46;cursor:not-allowed}.slot.selected{background:#1597ff;border-color:#1597ff}.appointment-list{display:flex;flex-direction:column;gap:10px}.appointment{border:1px solid var(--line);background:#0d1720;border-radius:12px;padding:14px}.appointment .row{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.a-pending{background:#5d481e;color:#ffd976}.a-confirmed{background:#174c42;color:#7ce2c0}.a-cancelled{background:#47262a;color:#ff9c9c}.a-done{background:#27472f;color:#9af0a5}.public-note{background:#101d28;border:1px dashed #31516b;border-radius:12px;padding:13px;margin-bottom:15px}.progress4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;font-size:11px;color:#9fb0bf;text-align:center}.progress4 .done{color:#eef4f8}.progressbar4{height:12px;background:#253442;border-radius:99px;overflow:hidden}.progressbar4>div{height:100%;background:linear-gradient(90deg,#1597ff,#18b879);border-radius:99px}.tabbar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.tabbar .active{background:#1597ff}.service-other{display:none}.service-other.show{display:block}@media(max-width:700px){.slot-grid{grid-template-columns:repeat(2,1fr)}.calendar-grid{gap:3px}.cal-day{min-height:58px;padding:5px}}
 </style>
 </head>
 <body>
@@ -126,12 +128,20 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue)}textarea{min-he
 
 <section id="supervisao" class="screen">
   <div class="card" style="padding:22px">
-    <div class="toolbar"><div><h2>Painel de supervisão</h2><div class="subtitle" style="margin:3px 0 0">Equipamentos cadastrados</div></div><button class="btn primary" onclick="startCadastro()">➕ Adicionar equipamento</button></div>
-    <div class="filters">
-      <input id="search" placeholder="🔎 Buscar equipamento, cliente ou OS" oninput="renderTable()">
-      <select id="statusFilter" onchange="renderTable()"><option value="">Todos os status</option><option>Recebido</option><option>Levantamento de orçamento</option><option>Em execução</option><option>Finalizado</option></select>
+    <div class="toolbar"><div><h2>Painel de supervisão</h2><div class="subtitle" style="margin:3px 0 0">Equipamentos, serviços e agendamentos</div></div><button class="btn primary" onclick="startCadastro()">➕ Adicionar equipamento</button></div>
+    <div class="tabbar"><button id="tabEquip" class="btn primary" onclick="showSupervisionTab('equip')">🔧 Equipamentos</button><button id="tabAgend" class="btn" onclick="showSupervisionTab('agend')">📅 Agendamentos</button><button class="btn ghost" onclick="copyAppointmentLink()">🔗 Copiar link de agendamento</button></div>
+    <div id="supervisionEquip">
+      <div class="filters">
+        <input id="search" placeholder="🔎 Buscar equipamento, cliente ou OS" oninput="renderTable()">
+        <select id="statusFilter" onchange="renderTable()"><option value="">Todos os status</option><option>Recebido</option><option>Levantamento de orçamento</option><option>Em execução</option><option>Finalizado</option></select>
+      </div>
+      <div class="table-wrap" style="margin-top:14px"><table class="table"><thead><tr><th>Equipamento</th><th>Cliente</th><th>Status</th><th>Técnico</th><th>Nº OS</th><th>Data de entrada</th><th>Entregue por</th><th>WhatsApp</th></tr></thead><tbody id="tbody"></tbody></table></div>
     </div>
-    <div class="table-wrap" style="margin-top:14px"><table class="table"><thead><tr><th>Equipamento</th><th>Cliente</th><th>Status</th><th>Técnico</th><th>Nº OS</th><th>Data de entrada</th><th>Entregue por</th><th>WhatsApp</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    <div id="supervisionAgend" style="display:none">
+      <div class="public-note"><b>🔗 Link público para os clientes</b><br><span id="appointmentLinkText"></span></div>
+      <div class="filters"><input id="appointmentSearch" placeholder="🔎 Buscar cliente, equipamento ou serviço" oninput="renderAppointments()"><select id="appointmentStatusFilter" onchange="renderAppointments()"><option value="">Todos os status</option><option>Solicitado</option><option>Confirmado</option><option>Cancelado</option><option>Concluído</option></select></div>
+      <div id="appointmentList" class="appointment-list" style="margin-top:14px"></div>
+    </div>
   </div>
 </section>
 
@@ -158,6 +168,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue)}textarea{min-he
         <h3>📷 Fotos</h3><div id="detailPhotos" class="photos"></div>
       </div>
     </div>
+  </div>
+</section>
+
+<section id="agendamentoPublico" class="screen">
+  <div class="form-card card" style="max-width:980px">
+    <div id="appointmentPublicContent"></div>
   </div>
 </section>
 
@@ -211,7 +227,7 @@ const SUPABASE_KEY = 'sb_publishable_1-wAobyjl5cqUzMcK2hOkg_fdudXmjX';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let db={equipamentos:[],tecnicos:[]};
+let db={equipamentos:[],tecnicos:[],agendamentos:[]};
 let editingTechId='';
 let draft={photos:[]}, step=1, currentId=null;
 const $=id=>document.getElementById(id);
@@ -223,14 +239,16 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function statusClass(s){return s==='Recebido'?'s-recebido':s==='Levantamento de orçamento'?'s-orc':s==='Em execução'?'s-exec':'s-fin'}
 
 async function loadAll(){
-  const [{data:equip,error:ee},{data:tech,error:et},{data:msgs,error:em}]=await Promise.all([
+  const [{data:equip,error:ee},{data:tech,error:et},{data:msgs,error:em},{data:agend,error:ea}]=await Promise.all([
     sb.from('equipamentos').select('*').order('created_at',{ascending:false}),
     sb.from('tecnicos').select('*').order('nome'),
-    sb.from('mensagens_cliente').select('equipamento_id,lida').order('created_at',{ascending:false})
+    sb.from('mensagens_cliente').select('equipamento_id,lida').order('created_at',{ascending:false}),
+    sb.from('agendamentos').select('*').order('data_agendamento').order('hora_inicio')
   ]);
   if(ee){console.error(ee);toast('Erro ao carregar equipamentos.');return}
   if(et){console.error(et);toast('Erro ao carregar técnicos.');return}
   if(em){console.error(em);toast('Erro ao carregar notificações.');return}
+  if(ea){console.error(ea);toast('Erro ao carregar agendamentos. Verifique a tabela de agendamentos no Supabase.');return}
   const unreadByEquipment={};
   (msgs||[]).forEach(m=>{if(!m.lida) unreadByEquipment[m.equipamento_id]=(unreadByEquipment[m.equipamento_id]||0)+1});
   db.equipamentos=(equip||[]).map(e=>({...e,
@@ -240,6 +258,7 @@ async function loadAll(){
     token:e.token_acompanhamento,unreadMessages:unreadByEquipment[e.id]||0,photos:[],messages:[],history:[]
   }));
   db.tecnicos=(tech||[]).map(t=>({id:t.id,nome:t.nome,telefone:t.telefone,email:t.email,ativo:t.ativo}));
+  db.agendamentos=agend||[];
 }
 async function loadRelations(e){
   const [ph,ms,hi]=await Promise.all([
@@ -453,6 +472,32 @@ async function saveTech(){const n=$('techName').value.trim();const phone=$('tech
 async function deleteTech(id){const t=db.tecnicos.find(x=>x.id===id);if(!t)return;if(!confirm(`Excluir o técnico "${t.nome}"?`))return;const {error}=await sb.from('tecnicos').delete().eq('id',id);if(error){toast('Erro ao excluir técnico: '+error.message);console.error(error);return}await loadAll();renderTechs();toast('Técnico excluído.')}
 async function toggleTech(id){const t=db.tecnicos.find(x=>x.id===id);if(!t)return;const {error}=await sb.from('tecnicos').update({ativo:t.ativo===false}).eq('id',id);if(error){toast('Erro ao alterar técnico.');return}await loadAll();renderTechs()}
 
+
+const APPT_SLOTS=['08:00','09:00','10:00','11:00','13:00','14:00','15:00','16:00','17:00'];
+let appointmentMonth=new Date(); appointmentMonth.setDate(1);
+let appointmentSelectedDate=''; let appointmentSelectedTime=''; let appointmentPublicStep=1; let appointmentData={}; let appointmentToken='';
+function appointmentPublicLink(){return getPublicBase()+'?agendar=1'}
+function copyAppointmentLink(){const link=appointmentPublicLink();navigator.clipboard?.writeText(link).then(()=>toast('Link de agendamento copiado.')).catch(()=>{prompt('Copie o link de agendamento:',link)})}
+function dateISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function brDate(v){if(!v)return '-';const [y,m,d]=v.split('-');return `${d}/${m}/${y}`}
+function appointmentStatusClass(s){return s==='Solicitado'?'a-pending':s==='Confirmado'?'a-confirmed':s==='Cancelado'?'a-cancelled':'a-done'}
+function showSupervisionTab(tab){$('supervisionEquip').style.display=tab==='equip'?'block':'none';$('supervisionAgend').style.display=tab==='agend'?'block':'none';$('tabEquip').className='btn '+(tab==='equip'?'primary':'');$('tabAgend').className='btn '+(tab==='agend'?'primary':'');if(tab==='agend'){renderAppointments();$('appointmentLinkText').textContent=appointmentPublicLink()}}
+async function showSupervisao(){stopClientAutoRefresh();await loadAll();showScreen('supervisao');showSupervisionTab('equip');renderTable();startAdminAutoRefresh()}
+function renderAppointments(){const q=($('appointmentSearch')?.value||'').toLowerCase(),sf=$('appointmentStatusFilter')?.value||'';const list=db.agendamentos.filter(a=>(!q||[a.nome_cliente,a.equipamento,a.servico,a.telefone].join(' ').toLowerCase().includes(q))&&(!sf||a.status===sf));$('appointmentList').innerHTML=list.length?list.map(a=>`<div class="appointment"><div class="row"><div><b>📅 ${brDate(a.data_agendamento)} às ${String(a.hora_inicio).slice(0,5)}</b><br><small>${esc(a.nome_cliente)} — ${esc(a.equipamento)}</small></div><span class="status ${appointmentStatusClass(a.status)}">${esc(a.status)}</span></div><div style="margin-top:9px;color:#9fb0bf;font-size:13px"><b>Serviço:</b> ${esc(a.servico)}${a.servico==='Outros'&&a.servico_outros?`<br><b>Relato:</b> ${esc(a.servico_outros)}`:''}<br><b>Telefone:</b> ${esc(phoneDisplay(a.telefone))}<br><b>CPF/CNPJ:</b> ${esc(a.cpf_cnpj)}<br><b>Modelo:</b> ${esc(a.modelo||'-')} | <b>Série:</b> ${esc(a.numero_serie||'-')} | <b>Horas:</b> ${esc(a.horas||'-')}</div><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:12px">${a.status==='Solicitado'?`<button class="btn success" onclick="updateAppointmentStatus('${a.id}','Confirmado')">✅ Aprovar</button><button class="btn danger" onclick="updateAppointmentStatus('${a.id}','Cancelado')">❌ Recusar</button>`:''}${a.status==='Confirmado'?`<button class="btn" onclick="updateAppointmentStatus('${a.id}','Concluído')">✔️ Concluir</button><button class="btn danger" onclick="updateAppointmentStatus('${a.id}','Cancelado')">❌ Cancelar</button>`:''}</div></div>`).join(''):'<div class="empty">Nenhum agendamento encontrado.</div>'}
+async function updateAppointmentStatus(id,status){if(!confirm(`Alterar este agendamento para "${status}"?`))return;const {error}=await sb.from('agendamentos').update({status,updated_at:new Date().toISOString()}).eq('id',id);if(error){toast('Erro ao atualizar agendamento: '+error.message);return}await loadAll();renderAppointments();toast('Agendamento atualizado.')}
+function startPublicAppointment(){appointmentPublicStep=1;appointmentSelectedDate='';appointmentSelectedTime='';appointmentData={};appointmentMonth=new Date();appointmentMonth.setDate(1);showScreen('agendamentoPublico');renderPublicAppointment()}
+function renderPublicAppointment(){const c=$('appointmentPublicContent');if(!c)return;if(appointmentPublicStep===1){const y=appointmentMonth.getFullYear(),m=appointmentMonth.getMonth(),first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),start=first.getDay();let cells='';['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(x=>cells+=`<div class="cal-week">${x}</div>`);for(let i=0;i<start;i++)cells+='<div></div>';for(let d=1;d<=days;d++){const dt=new Date(y,m,d),iso=dateISO(dt),past=iso<dateISO(new Date()),selected=iso===appointmentSelectedDate;cells+=`<button class="cal-day ${past?'muted':''} ${selected?'selected':''}" ${past?'disabled':''} onclick="selectAppointmentDate('${iso}')"><b>${d}</b></button>`}c.innerHTML=`<h2>📅 Agende seu atendimento</h2><div class="subtitle">Escolha a data e depois um horário disponível. Os demais clientes não terão acesso aos seus dados.</div><div class="calendar-head"><button class="btn ghost" onclick="changeAppointmentMonth(-1)">←</button><div class="calendar-title">${new Date(y,m).toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</div><button class="btn ghost" onclick="changeAppointmentMonth(1)">→</button></div><div class="calendar-grid">${cells}</div>${appointmentSelectedDate?`<div class="card panel" style="margin-top:18px;box-shadow:none"><h3>Horários em ${brDate(appointmentSelectedDate)}</h3><div id="publicSlots" class="slot-grid"></div></div>`:''}`;if(appointmentSelectedDate)loadPublicSlots(appointmentSelectedDate);return}if(appointmentPublicStep===2){c.innerHTML=`<h2>👤 Seus dados</h2><div class="subtitle">Preencha todos os campos obrigatórios para continuar.</div><div class="grid"><div class="field full"><label>Nome <span class="req">*</span></label><input id="apNome" required></div><div class="field"><label>CPF/CNPJ <span class="req">*</span></label><input id="apCpf" required placeholder="CPF ou CNPJ"></div><div class="field"><label>Telefone <span class="req">*</span></label><input id="apTel" type="tel" value="+" oninput="prefixPlus(this)"></div></div><div class="nav"><button class="btn ghost" onclick="appointmentPublicStep=1;renderPublicAppointment()">← Voltar</button><button class="btn primary" onclick="nextPublicAppointmentCustomer()">Próximo →</button></div>`;initPhoneField('apTel');return}if(appointmentPublicStep===3){c.innerHTML=`<h2>🔧 Dados do equipamento</h2><div class="subtitle">Informe o equipamento e o serviço que deseja realizar.</div><div class="grid"><div class="field"><label>Equipamento <span class="req">*</span></label><input id="apEquip" placeholder="Ex.: Gerador"></div><div class="field"><label>Modelo</label><input id="apModelo"></div><div class="field"><label>Número de série</label><input id="apSerie"></div><div class="field"><label>Horas trabalhadas</label><input id="apHoras"></div><div class="field full"><label>Serviço <span class="req">*</span></label><select id="apServico" onchange="toggleOtherService()"><option value="">Selecione</option><option>Troca de óleo e filtros</option><option>Revisão geral</option><option>Levantamento de orçamento</option><option>Outros</option></select></div><div id="apOutroWrap" class="field full service-other"><label>Descreva o que está acontecendo <span class="req">*</span></label><textarea id="apOutro" placeholder="Explique o problema ou serviço desejado..."></textarea></div></div><div class="nav"><button class="btn ghost" onclick="appointmentPublicStep=2;renderPublicAppointment()">← Voltar</button><button class="btn primary" onclick="submitPublicAppointment()">Enviar solicitação →</button></div>`;return}if(appointmentPublicStep===4){const st=appointmentData.status||'Solicitado';const pct=st==='Solicitado'?25:st==='Confirmado'?55:st==='Concluído'?100:0;c.innerHTML=`<h2>${st==='Cancelado'?'❌ Agendamento cancelado':st==='Concluído'?'✅ Atendimento concluído':st==='Confirmado'?'✅ Agendamento aprovado':'⏳ Solicitação enviada'}</h2><div class="subtitle">${st==='Solicitado'?'Seu horário está aguardando aprovação da WCS GERADORES.':st==='Confirmado'?'Seu horário foi aprovado pela WCS GERADORES.':st==='Concluído'?'Este atendimento foi concluído.':'Este agendamento foi cancelado.'}</div><div class="card panel" style="box-shadow:none"><div class="info-grid"><div class="info"><small>Data</small><b>${brDate(appointmentSelectedDate)}</b></div><div class="info"><small>Horário</small><b>${appointmentSelectedTime}</b></div><div class="info"><small>Cliente</small><b>${esc(appointmentData.nome)}</b></div><div class="info"><small>Equipamento</small><b>${esc(appointmentData.equipamento)}</b></div></div><div style="margin:25px 0 8px"><div class="progressbar4"><div style="width:${pct}%"></div></div><div class="progress4"><span class="done">Solicitação enviada</span><span class="${st!=='Solicitado'?'done':''}">Aguardando aprovação</span><span class="${['Confirmado','Concluído'].includes(st)?'done':''}">Atendimento confirmado</span><span class="${st==='Concluído'?'done':''}">Atendimento concluído</span></div></div>${appointmentToken?`<div class="public-note">🔗 Guarde este link para acompanhar o andamento do seu agendamento.</div>`:''}</div>`}}
+function changeAppointmentMonth(delta){appointmentMonth.setMonth(appointmentMonth.getMonth()+delta);renderPublicAppointment()}
+function selectAppointmentDate(iso){appointmentSelectedDate=iso;appointmentSelectedTime='';renderPublicAppointment()}
+async function loadPublicSlots(date){const {data,error}=await sb.rpc('listar_horarios_agendamento',{p_data:date});const el=$('publicSlots');if(!el)return;if(error){el.innerHTML='<div class="empty">Não foi possível carregar os horários.</div>';return}el.innerHTML=(data||[]).map(s=>`<button class="slot ${s.disponivel?'':'busy'}" ${s.disponivel?`onclick="selectAppointmentTime('${String(s.hora_inicio).slice(0,5)}')"`:'disabled'}>${String(s.hora_inicio).slice(0,5)} ${s.disponivel?'':'— Indisponível'}</button>`).join('')}
+function selectAppointmentTime(t){appointmentSelectedTime=t;appointmentPublicStep=2;renderPublicAppointment()}
+async function openAppointmentByToken(token){appointmentToken=token;const {data,error}=await sb.rpc('consultar_agendamento',{p_token:token});const a=(data||[])[0];if(error||!a){showScreen('agendamentoPublico');$('appointmentPublicContent').innerHTML='<div class="empty">Link de agendamento inválido ou não encontrado.</div>';return}appointmentSelectedDate=a.data_agendamento;appointmentSelectedTime=String(a.hora_inicio).slice(0,5);appointmentData={nome:a.nome_cliente,equipamento:a.equipamento,status:a.status};appointmentPublicStep=4;showScreen('agendamentoPublico');renderPublicAppointment();setTimeout(()=>startAppointmentTracking(),100);}
+let appointmentTrackTimer=null;
+function startAppointmentTracking(){if(appointmentTrackTimer)clearInterval(appointmentTrackTimer);appointmentTrackTimer=setInterval(async()=>{if(!appointmentToken||document.visibilityState!=='visible')return;const {data}=await sb.rpc('consultar_agendamento',{p_token:appointmentToken});const a=(data||[])[0];if(a){appointmentData.status=a.status;renderPublicAppointment()}},5000)}
+
+function nextPublicAppointmentCustomer(){const n=$('apNome').value.trim(),cpf=$('apCpf').value.trim(),tel=$('apTel').value.trim();if(!n||!cpf||!tel){toast('Preencha nome, CPF/CNPJ e telefone.');return}const digits=cpf.replace(/\D/g,'');if(!validCPF(cpf)&&!validCNPJ(cpf)){toast('CPF/CNPJ inválido.');return}if(!validPhone(tel)){toast('Telefone inválido. Use +55 + DDD + telefone.');return}appointmentData={...appointmentData,nome:n,cpf,telefone:phoneDigits(tel)};appointmentPublicStep=3;renderPublicAppointment()}
+function toggleOtherService(){const v=$('apServico').value;$('apOutroWrap').classList.toggle('show',v==='Outros')}
+async function submitPublicAppointment(){const equipamento=$('apEquip').value.trim(),modelo=$('apModelo').value.trim(),serie=$('apSerie').value.trim(),horas=$('apHoras').value.trim(),servico=$('apServico').value,extra=$('apOutro')?.value.trim()||'';if(!equipamento||!servico||(servico==='Outros'&&!extra)){toast('Preencha o equipamento e o serviço.');return}const {data,error}=await sb.rpc('criar_agendamento',{p_data:appointmentSelectedDate,p_hora:appointmentSelectedTime,p_nome_cliente:appointmentData.nome,p_cpf_cnpj:appointmentData.cpf,p_telefone:appointmentData.telefone,p_equipamento:equipamento,p_modelo:modelo,p_numero_serie:serie,p_horas:horas,p_servico:servico,p_servico_outros:extra});if(error){toast(error.message.includes('ocupado')?'Este horário acabou de ser ocupado. Escolha outro.':'Não foi possível enviar o agendamento.');return}appointmentData.equipamento=equipamento;appointmentData.status='Solicitado';appointmentToken=(data||{}).token||((data||[])[0]?.token)||'';if(appointmentToken)history.replaceState({},'',getPublicBase()+'?agendamento='+encodeURIComponent(appointmentToken));appointmentPublicStep=4;renderPublicAppointment();startAppointmentTracking()}
 function getPublicBase(){return window.location.origin+window.location.pathname.replace(/\/$/,'')+'/'}
 function publicLink(token){return getPublicBase()+'?token='+encodeURIComponent(token)}
 function whatsappUrl(phone,text){
@@ -619,7 +664,11 @@ function showAdminHome(){showScreen('home')}
 
 // Inicialização segura: cliente por token não entra no painel administrativo.
 (async()=>{
-  const token=new URLSearchParams(window.location.search).get('token');
+  const params=new URLSearchParams(window.location.search);
+  const token=params.get('token');
+  if(params.get('agendar')==='1'){startPublicAppointment();return}
+  const agToken=params.get('agendamento');
+  if(agToken){openAppointmentByToken(agToken);return}
   if(token){
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     await openClientByToken(token);
